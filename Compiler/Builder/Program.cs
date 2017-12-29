@@ -47,7 +47,6 @@ namespace Bridge.Builder
             }
             catch (EmitterException ex)
             {
-                Debugger.Launch();
                 logger.Error(string.Format("Bridge.NET Compiler error: {1} ({2}, {3}) {0}", ex.ToString(), ex.FileName, ex.StartLine, ex.StartColumn));
                 return 1;
             }

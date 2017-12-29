@@ -28,23 +28,35 @@ SET /p proceed2=Have you updated the framework .nuspec version numbers? [y] or [
 IF "%proceed2%"=="y" (
     ECHO Starting Framework Publishing...
 
-    ..\..\.nuget\NuGet.exe push Bridge.Newtonsoft.Json.1.2.3.nupkg  %apikey%
+    ..\..\.nuget\NuGet.exe push Bridge.Newtonsoft.Json.1.4.0.nupkg  %apikey%
     ECHO Bridge.Newtonsoft.Json has been published
 
-    ..\..\.nuget\NuGet.exe push Bridge.Clean.16.5.0.nupkg  %apikey%
+    ..\..\.nuget\NuGet.exe push Bridge.Clean.16.6.0.nupkg  %apikey%
     ECHO Bridge.Clean has been published
 
-    ..\..\.nuget\NuGet.exe push Bridge.Bootstrap.3.10.0.nupkg  %apikey%
+    ..\..\.nuget\NuGet.exe push Bridge.Bootstrap.3.11.0.nupkg  %apikey%
     ECHO Bridge.Bootstrap has been published
 
-    ..\..\.nuget\NuGet.exe push Bridge.jQuery.2.10.0.nupkg  %apikey%
+    ..\..\.nuget\NuGet.exe push Bridge.Html5.Console.1.1.0.nupkg  %apikey%
+    ECHO Bridge.Html5.Console has been published
+
+    ..\..\.nuget\NuGet.exe push Bridge.jQuery.2.11.0.nupkg  %apikey%
     ECHO Bridge.jQuery has been published
 
-    ..\..\.nuget\NuGet.exe push Bridge.QUnit.1.9.0.nupkg  %apikey%
+    ..\..\.nuget\NuGet.exe push Bridge.QUnit.1.10.0.nupkg  %apikey%
     ECHO Bridge.QUnit has been published
 
-    ..\..\.nuget\NuGet.exe push Bridge.WebGL.1.8.4.nupkg  %apikey%
+    ..\..\.nuget\NuGet.exe push Bridge.WebGL.1.10.0.nupkg  %apikey%
     ECHO Bridge.WebGL has been published
+
+    ..\..\.nuget\NuGet.exe push Bridge.Test.Core.1.1.0.nupkg  %apikey%
+    ECHO Bridge.Test has been published
+
+    ..\..\.nuget\NuGet.exe push Bridge.Test.1.1.0.nupkg  %apikey%
+    ECHO Bridge.Test has been published
+
+    ..\..\.nuget\NuGet.exe push Bridge.Aspect.1.1.0.nupkg  %apikey%
+    ECHO Bridge.Aspect has been published
 
     ECHO SUCCESS!
 )

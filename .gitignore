@@ -194,6 +194,9 @@ Tests/**/App_Readme/
 /Bridge.Sandbox.sln
 /.build/packages/*.nupkg
 /.build/packages/*.exe
+/.build/packages/publish.log
+/.build/packages/publish.error.log
+/.build/packages/collectPathList.txt
 
 # NUnit test cases requires all the reference files
 *.log
