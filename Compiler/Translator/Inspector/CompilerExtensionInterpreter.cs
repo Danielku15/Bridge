@@ -429,8 +429,9 @@ namespace Bridge.Translator
         private void HandleAttributeBuilderInvocation(InvocationExpression invocationExpression, IMethod method)
         {
             // add attribute
-            if (method.Name == "Add" && invocationExpression.Target is MemberReferenceExpression memberReference)
+            if (method.Name == "Add" && invocationExpression.Target is MemberReferenceExpression)
             {
+                var memberReference = (MemberReferenceExpression)invocationExpression.Target;
                 AttributeBuilderDetails variableDetails = null;
                 if (memberReference.Target is InvocationExpression)
                 {
