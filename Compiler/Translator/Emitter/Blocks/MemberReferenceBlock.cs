@@ -82,7 +82,7 @@ namespace Bridge.Translator
                 this.MemberReferenceExpression.Target.AcceptVisitor(this.Emitter);
                 return;
             }
-            var target = BridgeTypes.ToJsName(member.Member.DeclaringType, this.Emitter, ignoreLiteralName: false);
+            var target = this.Emitter.ToJsName(member.Member.DeclaringType, ignoreLiteralName: false);
             this.NoTarget = string.IsNullOrWhiteSpace(target);
 
             if (member.Member.IsStatic
@@ -104,7 +104,7 @@ namespace Bridge.Translator
         private void WriteInterfaceMember(string interfaceTempVar, MemberResolveResult resolveResult, bool isSetter, string prefix = null)
         {
             var itypeDef = resolveResult.Member.DeclaringTypeDefinition;
-            var externalInterface = itypeDef.IsExternalInterface();
+            var externalInterface = itypeDef.GetExternalInterface();
             bool variance = MetadataUtils.IsJsGeneric(itypeDef, this.Emitter) &&
                 itypeDef.TypeParameters != null &&
                 itypeDef.TypeParameters.Any(typeParameter => typeParameter.Variance != VarianceModifier.Invariant);
@@ -187,7 +187,7 @@ namespace Bridge.Translator
             bool isStatement = false;
             bool isConstTarget = false;
 
-            var targetrr = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Target, this.Emitter);
+            var targetrr = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Target);
             if (targetrr is ConstantResolveResult)
             {
                 isConstTarget = true;
@@ -210,8 +210,8 @@ namespace Bridge.Translator
             var isInvoke = memberReferenceExpression.Parent is InvocationExpression && (((InvocationExpression)(memberReferenceExpression.Parent)).Target == memberReferenceExpression);
             if (isInvoke)
             {
-                resolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Parent, this.Emitter);
-                expressionResolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression, this.Emitter);
+                resolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Parent);
+                expressionResolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression);
 
                 if (expressionResolveResult is InvocationResolveResult)
                 {
@@ -227,7 +227,7 @@ namespace Bridge.Translator
             }
             else
             {
-                resolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression, this.Emitter);
+                resolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression);
             }
 
             bool oldIsAssignment = this.Emitter.IsAssignment;
@@ -297,7 +297,7 @@ namespace Bridge.Translator
             if (resolveResult is MethodGroupResolveResult)
             {
                 var oldResult = (MethodGroupResolveResult)resolveResult;
-                resolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Parent, this.Emitter);
+                resolveResult = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Parent);
 
                 if (resolveResult is DynamicInvocationResolveResult)
                 {
@@ -317,7 +317,7 @@ namespace Bridge.Translator
 
             if (!(resolveResult is InvocationResolveResult) && member != null && member.Member is IMethod)
             {
-                var interceptor = this.Emitter.Plugins.OnReference(this, this.MemberReferenceExpression, member);
+                var interceptor = this.Emitter.Translator.Plugins.OnReference(this, this.MemberReferenceExpression, member);
 
                 if (interceptor.Cancel)
                 {
@@ -413,7 +413,7 @@ namespace Bridge.Translator
 
             if (member != null && member.Member is IMethod && isInvoke)
             {
-                var i_rr = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Parent, this.Emitter) as CSharpInvocationResolveResult;
+                var i_rr = this.Emitter.Resolver.ResolveNode(memberReferenceExpression.Parent) as CSharpInvocationResolveResult;
 
                 if (i_rr != null && !i_rr.IsExpandedForm)
                 {
@@ -448,7 +448,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var ei = itypeDef.IsExternalInterface();
+                    var ei = itypeDef.GetExternalInterface();
 
                     if (ei != null)
                     {
@@ -669,7 +669,7 @@ namespace Bridge.Translator
                 if (resolveResult is TypeResolveResult)
                 {
                     TypeResolveResult typeResolveResult = (TypeResolveResult)resolveResult;
-                    this.Write(BridgeTypes.ToJsName(typeResolveResult.Type, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(typeResolveResult.Type));
                     return;
                 }
                 else
@@ -738,7 +738,7 @@ namespace Bridge.Translator
 
                                 if (isExtensionMethod)
                                 {
-                                    this.Write(BridgeTypes.ToJsName(resolvedMethod.DeclaringType, this.Emitter));
+                                    this.Write(this.Emitter.ToJsName(resolvedMethod.DeclaringType));
                                 }
                                 else
                                 {
@@ -950,8 +950,7 @@ namespace Bridge.Translator
 
                             if (this.MemberReferenceExpression.Target is BaseReferenceExpression && !property.IsIndexer && proto)
                             {
-                                var alias = BridgeTypes.ToJsName(member.Member.DeclaringType, this.Emitter,
-                                    isAlias: true);
+                                var alias = this.Emitter.ToJsName(member.Member.DeclaringType, isAlias: true);
                                 if (alias.StartsWith("\""))
                                 {
                                     alias = alias.Insert(1, "$");
@@ -1086,7 +1085,7 @@ namespace Bridge.Translator
             }
             else
             {
-                sb.Append(BridgeTypes.ToJsName(method.DeclaringType, emitter));
+                sb.Append(emitter.ToJsName(method.DeclaringType));
             }
 
             sb.Append(".");
@@ -1113,7 +1112,7 @@ namespace Bridge.Translator
                     }
                     else
                     {
-                        sb.Append(BridgeTypes.ToJsName(typeArgument, emitter));
+                        sb.Append(emitter.ToJsName(typeArgument));
                     }
                 }
             }

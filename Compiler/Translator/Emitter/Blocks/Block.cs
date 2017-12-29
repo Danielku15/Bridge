@@ -184,7 +184,7 @@ namespace Bridge.Translator
                 var methodDeclaration = (MethodDeclaration)this.BlockStatement.Parent;
                 if (!methodDeclaration.ReturnType.IsNull)
                 {
-                    var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration.ReturnType, this.Emitter);
+                    var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration.ReturnType);
                     this.ReturnType = rr.Type;
                 }
                 this.ConvertParamsToReferences(methodDeclaration.Parameters);
@@ -192,14 +192,14 @@ namespace Bridge.Translator
             else if (this.BlockStatement.Parent is AnonymousMethodExpression)
             {
                 var methodDeclaration = (AnonymousMethodExpression)this.BlockStatement.Parent;
-                var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration);
                 this.ReturnType = rr.Type;
                 this.ConvertParamsToReferences(methodDeclaration.Parameters);
             }
             else if (this.BlockStatement.Parent is LambdaExpression)
             {
                 var methodDeclaration = (LambdaExpression)this.BlockStatement.Parent;
-                var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration);
                 this.ReturnType = rr.Type;
                 this.ConvertParamsToReferences(methodDeclaration.Parameters);
             }
@@ -224,7 +224,7 @@ namespace Bridge.Translator
                     var methodDeclaration = (Accessor)this.BlockStatement.Parent;
                     if (!methodDeclaration.ReturnType.IsNull)
                     {
-                        var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration.ReturnType, this.Emitter);
+                        var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration.ReturnType);
                         this.ReturnType = rr.Type;
                     }
                 }

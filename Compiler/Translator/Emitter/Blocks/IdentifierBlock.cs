@@ -44,7 +44,7 @@ namespace Bridge.Translator
             this.isRefArg = this.Emitter.IsRefArg;
             this.Emitter.IsRefArg = false;
 
-            resolveResult = this.Emitter.Resolver.ResolveNode(identifierExpression, this.Emitter);
+            resolveResult = this.Emitter.Resolver.ResolveNode(identifierExpression);
 
             var id = identifierExpression.Identifier;
 
@@ -74,14 +74,14 @@ namespace Bridge.Translator
 
             if (resolveResult is TypeResolveResult)
             {
-                this.Write(BridgeTypes.ToJsName(resolveResult.Type, this.Emitter));
+                this.Write(this.Emitter.ToJsName(resolveResult.Type));
                 /*if (AttributeRegistry.IsExternal(resolveResult.Type.GetDefinition()) || resolveResult.Type.Kind == TypeKind.Enum)
                 {
-                    this.Write(BridgeTypes.ToJsName(resolveResult.Type, this.Emitter));
+                    this.Write(Types.ToJsName(resolveResult.Type, this.Emitter));
                 }
                 else
                 {
-                    this.Write("Bridge.get(" + BridgeTypes.ToJsName(resolveResult.Type, this.Emitter) + ")");
+                    this.Write("Bridge.get(" + Types.ToJsName(resolveResult.Type, this.Emitter) + ")");
                 }*/
 
                 return;
@@ -92,7 +92,7 @@ namespace Bridge.Translator
             var isInvoke = identifierExpression.Parent is InvocationExpression && (((InvocationExpression)(identifierExpression.Parent)).Target == identifierExpression);
             if (memberResult != null && memberResult.Member is IMethod && isInvoke)
             {
-                var i_rr = this.Emitter.Resolver.ResolveNode(identifierExpression.Parent, this.Emitter) as CSharpInvocationResolveResult;
+                var i_rr = this.Emitter.Resolver.ResolveNode(identifierExpression.Parent) as CSharpInvocationResolveResult;
 
                 if (i_rr != null && !i_rr.IsExpandedForm)
                 {
@@ -141,14 +141,14 @@ namespace Bridge.Translator
 
                 if (memberResult.Member.IsStatic)
                 {
-                    this.Write(BridgeTypes.ToJsName(memberResult.Member.DeclaringType, this.Emitter, ignoreLiteralName: false));
+                    this.Write(this.Emitter.ToJsName(memberResult.Member.DeclaringType, ignoreLiteralName: false));
                     /*if (!AttributeRegistry.IsExternal(memberResult.Member.DeclaringTypeDefinition) && memberResult.Member.DeclaringTypeDefinition.Kind != TypeKind.Enum)
                     {
-                        this.Write("(Bridge.get(" + BridgeTypes.ToJsName(memberResult.Member.DeclaringType, this.Emitter) + "))");
+                        this.Write("(Bridge.get(" + Types.ToJsName(memberResult.Member.DeclaringType, this.Emitter) + "))");
                     }
                     else
                     {
-                        this.Write(BridgeTypes.ToJsName(memberResult.Member.DeclaringType, this.Emitter));
+                        this.Write(Types.ToJsName(memberResult.Member.DeclaringType, this.Emitter));
                     }*/
                 }
                 else
@@ -519,7 +519,7 @@ namespace Bridge.Translator
 
                     if (memberResult.Member.IsStatic)
                     {
-                        trg = BridgeTypes.ToJsName(memberResult.Member.DeclaringType, this.Emitter, ignoreLiteralName: false);
+                        trg = this.Emitter.ToJsName(memberResult.Member.DeclaringType, ignoreLiteralName: false);
                     }
                     else
                     {
@@ -528,7 +528,7 @@ namespace Bridge.Translator
 
                     bool isBool = memberResult != null && NullableType.IsNullable(memberResult.Member.ReturnType) ? NullableType.GetUnderlyingType(memberResult.Member.ReturnType).IsKnownType(KnownTypeCode.Boolean) : memberResult.Member.ReturnType.IsKnownType(KnownTypeCode.Boolean);
                     bool skipGet = false;
-                    var orr = this.Emitter.Resolver.ResolveNode(identifierExpression.Parent, this.Emitter) as OperatorResolveResult;
+                    var orr = this.Emitter.Resolver.ResolveNode(identifierExpression.Parent) as OperatorResolveResult;
                     bool special = orr != null && orr.IsLiftedOperator;
 
                     if (!special && isBool &&
@@ -640,7 +640,7 @@ namespace Bridge.Translator
             bool noTarget = false;
             if (memberResult.Member.IsStatic)
             {
-                var target = BridgeTypes.ToJsName(memberResult.Member.DeclaringType, this.Emitter, ignoreLiteralName: false);
+                var target = this.Emitter.ToJsName(memberResult.Member.DeclaringType, ignoreLiteralName: false);
                 noTarget = string.IsNullOrWhiteSpace(target);
                 this.Write(target);
             }

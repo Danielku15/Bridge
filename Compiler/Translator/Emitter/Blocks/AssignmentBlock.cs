@@ -71,7 +71,7 @@ namespace Bridge.Translator
                         this.Write(JS.Types.SYSTEM_NULLABLE + "." + JS.Funcs.Math.LIFT + ".(");
                     }
 
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
 
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());
@@ -132,7 +132,7 @@ namespace Bridge.Translator
 
             if (needReturnValue && assignmentExpression.Parent is LambdaExpression)
             {
-                var lambdarr = this.Emitter.Resolver.ResolveNode(assignmentExpression.Parent, this.Emitter) as LambdaResolveResult;
+                var lambdarr = this.Emitter.Resolver.ResolveNode(assignmentExpression.Parent) as LambdaResolveResult;
 
                 if (lambdarr != null && lambdarr.ReturnType.Kind == TypeKind.Void)
                 {
@@ -149,9 +149,9 @@ namespace Bridge.Translator
             this.WriteAwaiters(assignmentExpression.Left);
             this.WriteAwaiters(assignmentExpression.Right);
 
-            var leftResolverResult = this.Emitter.Resolver.ResolveNode(assignmentExpression.Left, this.Emitter);
-            var rightResolverResult = this.Emitter.Resolver.ResolveNode(assignmentExpression.Right, this.Emitter);
-            var rr = this.Emitter.Resolver.ResolveNode(assignmentExpression, this.Emitter);
+            var leftResolverResult = this.Emitter.Resolver.ResolveNode(assignmentExpression.Left);
+            var rightResolverResult = this.Emitter.Resolver.ResolveNode(assignmentExpression.Right);
+            var rr = this.Emitter.Resolver.ResolveNode(assignmentExpression);
             var orr = rr as OperatorResolveResult;
             bool isDecimal = Helpers.IsDecimalType(rr.Type, this.Emitter.Resolver);
             bool isLong = Helpers.Is64Type(rr.Type, this.Emitter.Resolver);
@@ -691,7 +691,7 @@ namespace Bridge.Translator
             {
                 var wrap = assignmentExpression.Operator != AssignmentOperatorType.Assign
                     && this.Emitter.Writers.Count > initCount
-                    && !AssigmentExpressionHelper.CheckIsRightAssigmentExpression(assignmentExpression);
+                    && !assignmentExpression.IsRightAssigmentExpression();
 
                 if (wrap)
                 {
@@ -783,7 +783,7 @@ namespace Bridge.Translator
                     var name = OverloadsCollection.Create(this.Emitter, mrr.Member).GetOverloadName();
                     this.Write(JS.Types.Bridge.ENSURE_BASE_PROPERTY + "(this, \"" + name + "\")");
                     this.WriteDot();
-                    var alias = BridgeTypes.ToJsName(mrr.Member.DeclaringType, this.Emitter, isAlias: true);
+                    var alias = this.Emitter.ToJsName(mrr.Member.DeclaringType, isAlias: true);
                     if (alias.StartsWith("\""))
                     {
                         alias = alias.Insert(1, "$");
@@ -860,7 +860,7 @@ namespace Bridge.Translator
                 }
                 else if (!method.DeclaringTypeDefinition.IsExternal())
                 {
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
 
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());

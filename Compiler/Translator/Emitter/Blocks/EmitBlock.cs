@@ -246,15 +246,15 @@ namespace Bridge.Translator
             this.Emitter.Tag = "JS";
             this.Emitter.Writers = new Stack<IWriter>();
             this.Emitter.Outputs = new EmitterOutputs();
-            var metas = new Dictionary<int, Dictionary<IType, string>>();
-            Action<IType, JObject> addMeta = (type, metaData) =>
+            var metas = new Dictionary<int, Dictionary<ITypeInfo, string>>();
+            Action<ITypeInfo, JObject> addMeta = (type, metaData) =>
             {
                 string typeArgs = "";
-                if (type.TypeArguments.Count > 0 && !type.IsIgnoreGeneric())
+                if (type.Type.TypeArguments.Count > 0 && !type.Type.IsIgnoreGeneric())
                 {
                     StringBuilder arr_sb = new StringBuilder();
                     var comma = false;
-                    foreach (var typeArgument in type.TypeArguments)
+                    foreach (var typeArgument in type.Type.TypeArguments)
                     {
                         if (comma)
                         {
@@ -269,32 +269,33 @@ namespace Bridge.Translator
                 }
 
                 int? namespaceKey;
-                var meta = string.Format("$m({0}, function ({2}) {{ return {1}; }});", MetadataUtils.GetTypeName(type, this.Emitter, false, out namespaceKey, true), metaData.ToString(Formatting.None), typeArgs);
+                var meta = string.Format("$m({0}, function ({2}) {{ return {1}; }});", MetadataUtils.GetTypeName(type.Type, this.Emitter, false, out namespaceKey, true), metaData.ToString(Formatting.None), typeArgs);
 
                 if (!namespaceKey.HasValue)
                 {
                     namespaceKey = int.MinValue;
                 }
 
-                Dictionary<IType, string> perTypeMeta;
+                Dictionary<ITypeInfo, string> perTypeMeta;
                 if (!metas.TryGetValue(namespaceKey.Value, out perTypeMeta))
                 {
-                    metas[namespaceKey.Value] = perTypeMeta = new Dictionary<IType, string>();
+                    metas[namespaceKey.Value] = perTypeMeta = new Dictionary<ITypeInfo, string>();
                 }
 
                 perTypeMeta.Add(type, meta);
             };
 
-            this.Emitter.Translator.Plugins.BeforeTypesEmit(this.Emitter, this.Emitter.Types);
+            var outputTypes = this.Emitter.Translator.Types.OutputTypes;
+            this.Emitter.Translator.Plugins.BeforeTypesEmit(this.Emitter.Translator, outputTypes);
             this.Emitter.ReflectableTypes = this.GetReflectableTypes();
             var reflectedTypes = this.Emitter.ReflectableTypes;
             var tmpBuffer = new StringBuilder();
             StringBuilder currentOutput = null;
             this.Emitter.NamedBoxedFunctions = new Dictionary<IType, Dictionary<string, string>>();
 
-            foreach (var type in this.Emitter.Types)
+            foreach (var type in outputTypes)
             {
-                this.Emitter.Translator.Plugins.BeforeTypeEmit(this.Emitter, type);
+                this.Emitter.Translator.Plugins.BeforeTypeEmit(this.Emitter.Translator, type);
 
                 this.Emitter.Translator.EmitNode = type.TypeDeclaration;
                 var typeDef = type.Type.GetDefinition();
@@ -303,7 +304,7 @@ namespace Bridge.Translator
                 bool isNative;
                 if (typeDef.Kind == TypeKind.Interface && typeDef.IsExternalInterface(out isNative))
                 {
-                    this.Emitter.Translator.Plugins.AfterTypeEmit(this.Emitter, type);
+                    this.Emitter.Translator.Plugins.AfterTypeEmit(this.Emitter.Translator, type);
                     continue;
                 }
 
@@ -314,34 +315,18 @@ namespace Bridge.Translator
 
                     if (typeDef.IsExternal() || ignore)
                     {
-                        this.Emitter.Translator.Plugins.AfterTypeEmit(this.Emitter, type);
+                        this.Emitter.Translator.Plugins.AfterTypeEmit(this.Emitter.Translator, type);
                         continue;
                     }
                 }
 
                 this.Emitter.InitEmitter();
 
-                ITypeInfo typeInfo;
-
-                if (this.Emitter.TypeInfoDefinitions.ContainsKey(type.Key))
-                {
-                    typeInfo = this.Emitter.TypeInfoDefinitions[type.Key];
-
-                    type.Module = typeInfo.Module;
-                    type.FileName = typeInfo.FileName;
-                    type.Dependencies = typeInfo.Dependencies;
-                    typeInfo = type;
-                }
-                else
-                {
-                    typeInfo = type;
-                }
-
                 this.Emitter.SourceFileName = type.TypeDeclaration.GetParent<SyntaxTree>().FileName;
-                this.Emitter.SourceFileNameIndex = this.Emitter.SourceFiles.IndexOf(this.Emitter.SourceFileName);
-                this.Emitter.Output = this.GetOutputForType(typeInfo, null);
+                this.Emitter.SourceFileNameIndex = this.Emitter.Translator.SourceFiles.IndexOf(this.Emitter.SourceFileName);
+                this.Emitter.Output = this.GetOutputForType(type, null);
                 this.Emitter.TypeInfo = type;
-                type.JsName = BridgeTypes.ToJsName(type.Type, this.Emitter, true, removeScope: false);
+                type.JsName = this.Emitter.ToJsName(type.Type, true, removeScope: false);
 
                 if (this.Emitter.Output.Length > 0)
                 {
@@ -357,14 +342,14 @@ namespace Bridge.Translator
                     this.Indent();
                 }
 
-                var name = BridgeTypes.ToJsName(type.Type, this.Emitter, true, true, true);
+                var name = this.Emitter.ToJsName(type.Type, true, true, true);
                 if (type.Type.DeclaringType != null && JS.Reserved.StaticNames.Any(n => String.Equals(name, n, StringComparison.InvariantCulture)))
                 {
                     throw new EmitterException(type.TypeDeclaration, "Nested class cannot have such name: " + name + ". Please rename it.");
                 }
 
                 new ClassBlock(this.Emitter, this.Emitter.TypeInfo).Emit();
-                this.Emitter.Translator.Plugins.AfterTypeEmit(this.Emitter, type);
+                this.Emitter.Translator.Plugins.AfterTypeEmit(this.Emitter.Translator, type);
 
                 currentOutput.Append(tmpBuffer.ToString());
                 this.Emitter.Output = currentOutput;
@@ -374,9 +359,9 @@ namespace Bridge.Translator
             this.EmitNamedBoxedFunctions();
 
             this.Emitter.NamespacesCache = new Dictionary<string, int>();
-            foreach (var type in this.Emitter.Types)
+            foreach (var type in outputTypes)
             {
-                var typeDef = type.Type.GetDefinition();
+                var typeDef = type.Type;
                 bool isGlobal = false;
                 if (typeDef != null)
                 {
@@ -385,7 +370,7 @@ namespace Bridge.Translator
 
                 if (typeDef.FullName != "System.Object")
                 {
-                    var name = BridgeTypes.ToJsName(typeDef, this.Emitter);
+                    var name = this.Emitter.ToJsName(typeDef);
 
                     if (name == "Object")
                     {
@@ -401,7 +386,7 @@ namespace Bridge.Translator
                     continue;
                 }
 
-                if (isGlobal || this.Emitter.TypeInfo.Module != null || reflectedTypes.Any(t => t == type.Type))
+                if (isGlobal || this.Emitter.TypeInfo.Module != null || reflectedTypes.Any(t => t == type))
                 {
                     continue;
                 }
@@ -410,35 +395,27 @@ namespace Bridge.Translator
 
                 if (meta != null)
                 {
-                    addMeta(type.Type, meta);
+                    addMeta(type, meta);
                 }
             }
 
             foreach (var reflectedType in reflectedTypes)
             {
-                var typeDef = reflectedType.GetDefinition();
                 JObject meta = null;
-                if (typeDef != null)
+                SyntaxTree tree = null;
+
+                if (reflectedType.TypeDeclaration != null)
                 {
-                    var tInfo = this.Emitter.Types.FirstOrDefault(t => t.Type == reflectedType);
-                    SyntaxTree tree = null;
-
-                    if (tInfo != null && tInfo.TypeDeclaration != null)
-                    {
-                        tree = tInfo.TypeDeclaration.GetParent<SyntaxTree>();
-                    }
-
-                    if (tInfo != null && tInfo.Module != null)
-                    {
-                        continue;
-                    }
-
-                    meta = MetadataUtils.ConstructTypeMetadata(reflectedType.GetDefinition(), this.Emitter, false, tree);
+                    tree = reflectedType.TypeDeclaration.GetParent<SyntaxTree>();
                 }
-                else
+
+                if (reflectedType != null && reflectedType.Module != null)
                 {
-                    meta = MetadataUtils.ConstructITypeMetadata(reflectedType, this.Emitter);
+                    continue;
                 }
+
+                meta = MetadataUtils.ConstructTypeMetadata(reflectedType.Type, this.Emitter, false, tree);
+               
 
                 if (meta != null)
                 {
@@ -480,13 +457,13 @@ namespace Bridge.Translator
                     this.Write(Bridge.Translator.Emitter.INDENT + "$n = ");
 
                     var sorted = this.Emitter.NamespacesCache.OrderBy(key => key.Value).ToArray();
-                    Write(this.Emitter.ToJavaScript(sorted.Select(item => new JRaw(item.Key)).ToArray()));
+                    Write(sorted.Select(item => new JRaw(item.Key)).ToArray().ToJavaScript());
                     this.Write(";");
                     this.WriteNewLine();
 
                     foreach (var ns in sorted)
                     {
-                        Dictionary<IType, string> nsMeta;
+                        Dictionary<ITypeInfo, string> nsMeta;
                         if (metas.TryGetValue(ns.Value, out nsMeta))
                         {
                             foreach (var meta in nsMeta)
@@ -527,7 +504,7 @@ namespace Bridge.Translator
 
             //this.RemovePenultimateEmptyLines(true);
 
-            this.Emitter.Translator.Plugins.AfterTypesEmit(this.Emitter, this.Emitter.Types);
+            this.Emitter.Translator.Plugins.AfterTypesEmit(this.Emitter.Translator, outputTypes);
         }
 
         protected virtual void EmitNamedBoxedFunctions()
@@ -542,7 +519,7 @@ namespace Bridge.Translator
 
                 foreach (var boxedFunction in this.Emitter.NamedBoxedFunctions)
                 {
-                    var name = BridgeTypes.ToJsName(boxedFunction.Key, this.Emitter, true);
+                    var name = this.Emitter.ToJsName(boxedFunction.Key, true);
 
                     this.WriteNewLine();
                     this.Write(JS.Funcs.BRIDGE_NS);
@@ -591,7 +568,7 @@ namespace Bridge.Translator
 
             if (!skip && typeDef.FullName != "System.Object")
             {
-                var name = BridgeTypes.ToJsName(typeDef, this.Emitter);
+                var name = this.Emitter.ToJsName(typeDef);
 
                 if (name == "Object" || name == "System.Object" || name == "Function")
                 {
@@ -602,7 +579,7 @@ namespace Bridge.Translator
             return skip;
         }
 
-        public IType[] GetReflectableTypes()
+        public ITypeInfo[] GetReflectableTypes()
         {
             var config = this.Emitter.AssemblyInfo.Reflection;
             //bool? enable = config.Disabled.HasValue ? !config.Disabled : (configInternal.Disabled.HasValue ? !configInternal.Disabled : true);
@@ -625,7 +602,7 @@ namespace Bridge.Translator
 
             if (enable.HasValue && !enable.Value)
             {
-                return new IType[0];
+                return new ITypeInfo[0];
             }
 
             if (enable.HasValue && enable.Value && !hasSettings)
@@ -638,14 +615,14 @@ namespace Bridge.Translator
                 this.Emitter.IsAnonymousReflectable = typeAccessibility.Value.HasFlag(TypeAccessibility.Anonymous);
             }
 
-            List<IType> reflectTypes = new List<IType>();
-            foreach (var bridgeType in this.Emitter.BridgeTypes)
+            List<ITypeInfo> reflectTypes = new List<ITypeInfo>();
+            foreach (var bridgeType in this.Emitter.Translator.Types.AllTypes)
             {
                 var result = false;
-                var type = bridgeType.Value.Type;
+                var type = bridgeType.Type;
                 var typeDef = type.GetDefinition();
                 //var thisAssembly = bridgeType.Value.TypeInfo != null;
-                var thisAssembly = bridgeType.Value.Type.GetDefinition().ParentAssembly.FullAssemblyName
+                var thisAssembly = bridgeType.Type.ParentAssembly.FullAssemblyName
                     == this.Emitter.Resolver.Compilation.MainAssembly.FullAssemblyName;
                 var external = typeDef != null && typeDef.IsExternal();
 
@@ -665,7 +642,7 @@ namespace Bridge.Translator
 
                     if (typeDef.IsReflectable(false, null) && thisAssembly)
                     {
-                        reflectTypes.Add(type);
+                        reflectTypes.Add(bridgeType);
                         continue;
                     }
 
@@ -673,7 +650,7 @@ namespace Bridge.Translator
                     {
                         if (!string.IsNullOrWhiteSpace(filter) && EmitBlock.MatchFilter(type, filter, thisAssembly, result))
                         {
-                            reflectTypes.Add(type);
+                            reflectTypes.Add(bridgeType);
                         }
                         continue;
                     }
@@ -726,7 +703,7 @@ namespace Bridge.Translator
 
                 if (result)
                 {
-                    reflectTypes.Add(type);
+                    reflectTypes.Add(bridgeType);
                 }
             }
 

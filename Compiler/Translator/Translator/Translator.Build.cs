@@ -23,7 +23,7 @@ namespace Bridge.Translator
             this.Log.Info("Building assembly...");
 
             var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
-            var parseOptions = new CSharpParseOptions(LanguageVersion.CSharp6, Microsoft.CodeAnalysis.DocumentationMode.Parse, SourceCodeKind.Regular, AssemblyInfo.DefineConstants);
+            var parseOptions = new CSharpParseOptions(LanguageVersion.CSharp6, Microsoft.CodeAnalysis.DocumentationMode.Parse, SourceCodeKind.Regular, this.AssemblyInfo.DefineConstants);
             var files = this.SourceFiles;
             IList<string> referencesPathes = null;
             var baseDir = Path.GetDirectoryName(this.Location);
@@ -74,7 +74,7 @@ namespace Bridge.Translator
                             Rebuild = this.Rebuild,
                             ProjectLocation = projectRef,
                             BridgeLocation = this.BridgeLocation,
-                            ProjectProperties = new Contract.ProjectProperties
+                            ProjectProperties = new ProjectProperties
                             {
                                 BuildProjects = this.ProjectProperties.BuildProjects,
                                 Configuration = this.ProjectProperties.Configuration,
@@ -107,10 +107,10 @@ namespace Bridge.Translator
 
                     if (!Directory.Exists(path))
                     {
-                        throw (TranslatorException)Bridge.Translator.TranslatorException.Create("ReferencesPath doesn't exist - {0}", path);
+                        TranslatorException.Throw("ReferencesPath doesn't exist - {0}", path);
                     }
 
-                    string[] allfiles = System.IO.Directory.GetFiles(path, "*.dll", SearchOption.TopDirectoryOnly);
+                    string[] allfiles = Directory.GetFiles(path, "*.dll", SearchOption.TopDirectoryOnly);
                     list.AddRange(allfiles);
                 }
 
@@ -135,7 +135,7 @@ namespace Bridge.Translator
                 {
                     var doc = new System.Xml.XmlDocument();
                     doc.LoadXml(File.ReadAllText(packagesConfigPath));
-                    var nodes = doc.DocumentElement.SelectNodes($"descendant::package");
+                    var nodes = doc.DocumentElement.SelectNodes("descendant::package");
 
                     if (nodes.Count > 0)
                     {
@@ -164,7 +164,7 @@ namespace Bridge.Translator
             var arr = referencesPathes.ToArray();
             foreach (var refPath in arr)
             {
-                AddNestedReferences(referencesPathes, refPath);
+                this.AddNestedReferences(referencesPathes, refPath);
             }
 
             IList<SyntaxTree> trees = new List<SyntaxTree>(files.Count);
@@ -187,12 +187,12 @@ namespace Bridge.Translator
             foreach (var path in referencesPathes)
             {
                 var newPath = Path.GetFullPath(new Uri(Path.Combine(outputDir, Path.GetFileName(path))).LocalPath);
-                if (string.Compare(newPath, path, true) != 0)
+                if (string.Compare(newPath, path, StringComparison.InvariantCultureIgnoreCase) != 0)
                 {
                     File.Copy(path, newPath, true);
                 }
 
-                if (updateBridgeLocation && string.Compare(Path.GetFileName(path), "bridge.dll", true) == 0)
+                if (updateBridgeLocation && string.Compare(Path.GetFileName(path), "bridge.dll", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
                     this.BridgeLocation = path;
                 }
@@ -223,7 +223,7 @@ namespace Bridge.Translator
                     }
                 }
 
-                Bridge.Translator.TranslatorException.Throw(sb.ToString());
+                TranslatorException.Throw(sb.ToString());
             }
 
             this.Log.Info("Building assembly done");
@@ -255,7 +255,7 @@ namespace Bridge.Translator
 
         private void AddNestedReferences(IList<string> referencesPathes, string refPath)
         {
-            var asm = Mono.Cecil.AssemblyDefinition.ReadAssembly(refPath, new ReaderParameters()
+            var asm = AssemblyDefinition.ReadAssembly(refPath, new ReaderParameters()
             {
                 ReadingMode = ReadingMode.Deferred,
                 AssemblyResolver = new CecilAssemblyResolver(this.Log, this.AssemblyLocation)
@@ -279,7 +279,7 @@ namespace Bridge.Translator
 
                 referencesPathes.Add(path);
 
-                AddNestedReferences(referencesPathes, path);
+                this.AddNestedReferences(referencesPathes, path);
             }
         }
     }

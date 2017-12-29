@@ -53,7 +53,7 @@ namespace Bridge.Translator
                 if (foreachStatement.VariableNameToken != null && !foreachStatement.VariableNameToken.IsNull)
                 {
                     this.VariableNames.Add(foreachStatement.VariableName);
-                    var rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement, this.Emitter);
+                    var rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement);
                     this.Variables.Add(rr.ElementVariable);
                 }
             }
@@ -66,7 +66,7 @@ namespace Bridge.Translator
             if (foreachStatement.VariableNameToken != null && !foreachStatement.VariableNameToken.IsNull)
             {
                 this.VariableNames.Add(foreachStatement.VariableName);
-                var rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement, this.Emitter);
+                var rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement);
                 this.Variables.Add(rr.ElementVariable);
             }
 
@@ -78,7 +78,7 @@ namespace Bridge.Translator
             foreach (var variable in variableDeclarationStatement.Variables)
             {
                 this.VariableNames.Add(variable.Name);
-                var lrr = (LocalResolveResult)this.Emitter.Resolver.ResolveNode(variable, this.Emitter);
+                var lrr = (LocalResolveResult)this.Emitter.Resolver.ResolveNode(variable);
                 this.Variables.Add(lrr.Variable);
             }
             base.VisitVariableDeclarationStatement(variableDeclarationStatement);
@@ -89,7 +89,7 @@ namespace Bridge.Translator
             if (!this.ExcludeReadOnly && catchClause.VariableNameToken != null && !catchClause.VariableNameToken.IsNull)
             {
                 this.VariableNames.Add(catchClause.VariableName);
-                var lrr = (LocalResolveResult)this.Emitter.Resolver.ResolveNode(catchClause.VariableNameToken, this.Emitter);
+                var lrr = (LocalResolveResult)this.Emitter.Resolver.ResolveNode(catchClause.VariableNameToken);
                 this.Variables.Add(lrr.Variable);
             }
 

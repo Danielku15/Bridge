@@ -40,12 +40,12 @@ namespace Bridge.Contract
             get; set;
         }
 
-        public AssemblyVersion Bridge
+        public System.Diagnostics.FileVersionInfo Bridge
         {
             get; set;
         }
 
-        public AssemblyVersion Compiler
+        public System.Diagnostics.FileVersionInfo Compiler
         {
             get; set;
         }

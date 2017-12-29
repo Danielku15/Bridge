@@ -66,11 +66,11 @@ namespace Bridge.Translator
 
                 if (expr.AstType != null)
                 {
-                    this.Write(BridgeTypes.ToJsName(expr.AstType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(expr.AstType));
                 }
                 else if (expr.IType != null)
                 {
-                    this.Write(BridgeTypes.ToJsName(expr.IType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(expr.IType));
                 }
                 else
                 {
@@ -98,7 +98,7 @@ namespace Bridge.Translator
                 }
 
                 needComma = true;
-                this.Write(BridgeTypes.ToJsName(type, this.Emitter));
+                this.Write(this.Emitter.ToJsName(type));
             }
 
             if (needComma)

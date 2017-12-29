@@ -22,19 +22,16 @@ namespace Bridge.Translator.TypeScript
             public string Key
             {
                 get;
-                set;
             }
 
             public Module Module
             {
                 get;
-                set;
             }
 
             public string Namespace
             {
                 get;
-                set;
             }
 
             public override int GetHashCode()
@@ -49,12 +46,14 @@ namespace Bridge.Translator.TypeScript
             {
                 var other = obj as OutputKey;
 
-                return other == null ? false : this.Key == other.Key && (this.Module == null && other.Module == null || this.Module != null && this.Module.Equals(other.Module));
+                return other != null && (this.Key == other.Key &&
+                                         (this.Module == null && other.Module == null ||
+                                          this.Module != null && this.Module.Equals(other.Module)));
             }
         }
 
         // This ensures a constant line separator throughout the application
-        private const char newLine = Bridge.Contract.XmlToJSConstants.DEFAULT_LINE_SEPARATOR;
+        private const char NewLine = XmlToJSConstants.DEFAULT_LINE_SEPARATOR;
 
         private Dictionary<OutputKey, StringBuilder> Outputs
         {
@@ -62,8 +61,8 @@ namespace Bridge.Translator.TypeScript
             set;
         }
 
-        private string ns = null;
-        private OutputKey outputKey = null;
+        private string _ns = null;
+        private OutputKey _outputKey = null;
 
         public EmitBlock(IEmitter emitter)
             : base(emitter, null)
@@ -73,7 +72,7 @@ namespace Bridge.Translator.TypeScript
 
         protected virtual StringBuilder GetOutputForType(ITypeInfo typeInfo)
         {
-            var info = BridgeTypes.GetNamespaceFilename(typeInfo, this.Emitter);
+            var info = this.Emitter.GetNamespaceFilename(typeInfo);
             var ns = info.Item1;
             var fileName = info.Item2;
             var module = info.Item3;
@@ -81,14 +80,14 @@ namespace Bridge.Translator.TypeScript
             StringBuilder output = null;
             OutputKey key = new OutputKey(fileName, module, ns);
 
-            if (this.ns != null && (this.ns != ns || this.outputKey != null && !this.outputKey.Equals(key)))
+            if (this._ns != null && (this._ns != ns || this._outputKey != null && !this._outputKey.Equals(key)))
             {
                 this.EndBlock();
                 this.WriteNewLine();
             }
 
-            this.ns = ns;
-            this.outputKey = key;
+            this._ns = ns;
+            this._outputKey = key;
 
             if (this.Outputs.ContainsKey(key))
             {
@@ -130,10 +129,10 @@ namespace Bridge.Translator.TypeScript
                 foreach (var d in this.Emitter.CurrentDependencies)
                 {
                     depSb.Append(@"/// <reference path=""./" + d.DependencyName + @".d.ts"" />");
-                    depSb.Append(newLine);
+                    depSb.Append(NewLine);
                 }
 
-                sb.Insert(0, depSb.ToString() + newLine);
+                sb.Insert(0, depSb.ToString() + NewLine);
                 this.Emitter.CurrentDependencies.Clear();
             }
         }
@@ -148,8 +147,8 @@ namespace Bridge.Translator.TypeScript
             var withoutModuleOutputs = this.Outputs.Where(o => o.Key.Module == null).ToList();
             var withModuleOutputs = this.Outputs.Where(o => o.Key.Module != null).ToList();
 
-            var nonModuleOutputs = withoutModuleOutputs.GroupBy(o => o.Key.Key).ToDictionary(t => t.Key, t => string.Join(newLine.ToString(), t.Select(r => r.Value.ToString()).ToList()));
-            var outputs = withModuleOutputs.GroupBy(o => o.Key.Module).ToDictionary(t => t.Key, t => string.Join(newLine.ToString(), t.Select(r => r.Value.ToString()).ToList()));
+            var nonModuleOutputs = withoutModuleOutputs.GroupBy(o => o.Key.Key).ToDictionary(t => t.Key, t => string.Join(NewLine.ToString(), t.Select(r => r.Value.ToString()).ToList()));
+            var outputs = withModuleOutputs.GroupBy(o => o.Key.Module).ToDictionary(t => t.Key, t => string.Join(NewLine.ToString(), t.Select(r => r.Value.ToString()).ToList()));
 
             if (this.Emitter.AssemblyInfo.OutputBy == OutputBy.Project)
             {
@@ -158,12 +157,12 @@ namespace Bridge.Translator.TypeScript
 
                 foreach (var item in nonModuleOutputs)
                 {
-                    e.NonModuletOutput.Append(item.Value.ToString() + newLine);
+                    e.NonModuletOutput.Append(item.Value.ToString() + NewLine);
                 }
 
                 foreach (var item in outputs)
                 {
-                    e.NonModuletOutput.Append(WrapModule(item) + newLine);
+                    e.NonModuletOutput.Append(WrapModule(item) + NewLine);
                 }
 
                 this.Emitter.Outputs.Add(fileName, e);
@@ -174,7 +173,7 @@ namespace Bridge.Translator.TypeScript
                 {
                     var fileName = item.Key + Files.Extensions.DTS;
                     var e = new EmitterOutput(fileName);
-                    e.NonModuletOutput.Append(item.Value.ToString());
+                    e.NonModuletOutput.Append(item.Value);
                     this.Emitter.Outputs.Add(fileName, e);
                 }
 
@@ -226,11 +225,11 @@ namespace Bridge.Translator.TypeScript
             this.Emitter.Writers = new Stack<IWriter>();
             this.Outputs = new Dictionary<OutputKey, StringBuilder>();
 
-            var types = this.Emitter.Types.ToArray();
+            var types = this.Emitter.Translator.Types.OutputTypes.ToArray();
             Array.Sort(types, (t1, t2) =>
             {
-                var t1ns = BridgeTypes.GetNamespaceFilename(t1, this.Emitter);
-                var t2ns = BridgeTypes.GetNamespaceFilename(t2, this.Emitter);
+                var t1ns = this.Emitter.GetNamespaceFilename(t1);
+                var t2ns = this.Emitter.GetNamespaceFilename(t2);
 
                 if (t1ns.Item1 == null && t2ns.Item1 == null)
                 {
@@ -246,9 +245,6 @@ namespace Bridge.Translator.TypeScript
                 {
                     return 1;
                 }
-
-                var key1 = t1ns.Item1 + (t1ns.Item3 != null ? t1ns.Item3.ExportAsNamespace : "");
-                var key2 = t2ns.Item1 + (t2ns.Item3 != null ? t2ns.Item3.ExportAsNamespace : "");
 
                 return t1ns.Item1.CompareTo(t2ns.Item1);
             });
@@ -268,29 +264,12 @@ namespace Bridge.Translator.TypeScript
                 {
                     continue;
                 }
-
-                ITypeInfo typeInfo;
-
-                if (this.Emitter.TypeInfoDefinitions.ContainsKey(type.Key))
-                {
-                    typeInfo = this.Emitter.TypeInfoDefinitions[type.Key];
-
-                    type.Module = typeInfo.Module;
-                    type.FileName = typeInfo.FileName;
-                    type.Dependencies = typeInfo.Dependencies;
-                    typeInfo = type;
-                }
-                else
-                {
-                    typeInfo = type;
-                }
-
                 this.Emitter.TypeInfo = type;
-                type.JsName = BridgeTypes.ToJsName(type.Type, this.Emitter, true);
+                type.JsName = this.Emitter.ToJsName(type.Type, true);
 
-                this.Emitter.Output = this.GetOutputForType(typeInfo);
+                this.Emitter.Output = this.GetOutputForType(type);
                 var nestedTypes = types.Where(t => t.ParentType == type);
-                new ClassBlock(this.Emitter, this.Emitter.TypeInfo, nestedTypes, types, this.ns).Emit();
+                new ClassBlock(this.Emitter, this.Emitter.TypeInfo, nestedTypes, types, this._ns).Emit();
                 this.WriteNewLine();
 
                 if (type != last)
@@ -300,7 +279,7 @@ namespace Bridge.Translator.TypeScript
             }
 
             this.InsertDependencies(this.Emitter.Output);
-            if (this.outputKey != null)
+            if (this._outputKey != null)
             {
                 this.EndBlock();
             }

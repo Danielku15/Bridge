@@ -28,16 +28,16 @@ namespace Bridge.Translator
 
             if (argsInfo.Expression != null)
             {
-                var rr = emitter.Resolver.ResolveNode(argsInfo.Expression, emitter) as MemberResolveResult;
+                var rr = emitter.Resolver.ResolveNode(argsInfo.Expression) as MemberResolveResult;
 
                 if (rr != null)
                 {
-                    BridgeType bridgeType = emitter.BridgeTypes.Get(rr.Member.DeclaringType, true);
+                    var bridgeType = emitter.Translator.Types.Get(rr.Member.DeclaringType);
 
                     if (bridgeType != null)
                     {
                         bool isCustomName;
-                        BridgeTypes.AddModule(emitter, null, bridgeType, false, false, out isCustomName);
+                        this.Emitter.AddModule(null, bridgeType, false, false, out isCustomName);
                     }
                 }
             }
@@ -225,7 +225,7 @@ namespace Bridge.Translator
                 var tp = this.Method.TypeParameters.FirstOrDefault(p => p.Name == name);
                 if (tp != null)
                 {
-                    name = BridgeTypes.ToJsName(this.Method.TypeArguments[tp.Index], this.Emitter);
+                    name = this.Emitter.ToJsName(this.Method.TypeArguments[tp.Index]);
                 }
             }
 
@@ -244,7 +244,7 @@ namespace Bridge.Translator
             IMember member = this.Method ?? argsInfo.Method ?? argsInfo.ResolveResult?.Member;
             if (member == null && argsInfo.Expression != null && argsInfo.Expression.Parent != null)
             {
-                var rre = this.Emitter.Resolver.ResolveNode(argsInfo.Expression, this.Emitter) as MemberResolveResult;
+                var rre = this.Emitter.Resolver.ResolveNode(argsInfo.Expression) as MemberResolveResult;
                 if (rre != null)
                 {
                     member = rre.Member;
@@ -349,7 +349,7 @@ namespace Bridge.Translator
 
                     if (exprs.Count == 1 && exprs[0] != null && exprs[0].Parent != null)
                     {
-                        var exprrr = this.Emitter.Resolver.ResolveNode(exprs[0], this.Emitter);
+                        var exprrr = this.Emitter.Resolver.ResolveNode(exprs[0]);
                         if (exprrr.Type.Kind == TypeKind.Array)
                         {
                             var match = _inlineMethod.Match(inline);
@@ -451,25 +451,17 @@ namespace Bridge.Translator
                         var cjs = new List<string>();
                         foreach (var expr in exprs)
                         {
-                            var rr = this.Emitter.Resolver.ResolveNode(expr, this.Emitter) as TypeOfResolveResult;
+                            var rr = this.Emitter.Resolver.ResolveNode(expr) as TypeOfResolveResult;
 
                             if (rr == null)
                             {
                                 throw new EmitterException(expr, "Module.Load supports typeof expression only");
                             }
 
-                            var bridgeType = this.Emitter.BridgeTypes.Get(rr.ReferencedType, true);
+                            var bridgeType = this.Emitter.Translator.Types.Get(rr.ReferencedType);
                             Module module = null;
 
-                            if (bridgeType.TypeInfo == null)
-                            {
-                                BridgeTypes.EnsureModule(bridgeType);
-                                module = bridgeType.Module;
-                            }
-                            else
-                            {
-                                module = bridgeType.TypeInfo.Module;
-                            }
+                            module = bridgeType.Module;
 
                             AddModuleByType(amd, cjs, module);
                         }
@@ -479,7 +471,7 @@ namespace Bridge.Translator
                         if (amd.Count > 0)
                         {
                             this.Write("amd: ");
-                            this.Write(this.Emitter.ToJavaScript(amd.ToArray()));
+                            this.Write(amd.ToArray().ToJavaScript());
                             if (cjs.Count > 0)
                             {
                                 this.Write(", ");
@@ -489,13 +481,13 @@ namespace Bridge.Translator
                         if (cjs.Count > 0)
                         {
                             this.Write("cjs: ");
-                            this.Write(this.Emitter.ToJavaScript(cjs.ToArray()));
+                            this.Write(cjs.ToArray().ToJavaScript());
                         }
 
                         if (!string.IsNullOrWhiteSpace(this.Emitter.AssemblyInfo.Loader.FunctionName))
                         {
                             this.Write(", ");
-                            this.Write(this.Emitter.ToJavaScript(this.Emitter.AssemblyInfo.Loader.FunctionName));
+                            this.Write(this.Emitter.AssemblyInfo.Loader.FunctionName.ToJavaScript());
                         }
 
                         this.Write("}, function () { ");
@@ -620,7 +612,7 @@ namespace Bridge.Translator
 
                         if (node != null)
                         {
-                            var rr = this.Emitter.Resolver.ResolveNode(node, this.Emitter);
+                            var rr = this.Emitter.Resolver.ResolveNode(node);
                             var type = rr.Type;
                             var mrr = rr as MemberResolveResult;
                             if (mrr != null && mrr.Member.ReturnType.Kind != TypeKind.Enum && mrr.TargetResult != null)
@@ -649,7 +641,7 @@ namespace Bridge.Translator
                         IType type = null;
                         if (node != null)
                         {
-                            var rr = this.Emitter.Resolver.ResolveNode(node, this.Emitter);
+                            var rr = this.Emitter.Resolver.ResolveNode(node);
                             type = rr.Type;
                             var mrr = rr as MemberResolveResult;
                             if (mrr != null && mrr.Member.ReturnType.Kind != TypeKind.Enum && mrr.TargetResult != null)
@@ -682,7 +674,7 @@ namespace Bridge.Translator
                                         enumType = type.GetDefinition().EnumUnderlyingType;
                                     }
                                 }
-                                this.Write(BridgeTypes.ToJsName(enumType, this.Emitter));
+                                this.Write(this.Emitter.ToJsName(enumType));
                             }
                             else
                             {
@@ -725,7 +717,7 @@ namespace Bridge.Translator
                             }
                             else
                             {
-                                var rr = this.Emitter.Resolver.ResolveNode(exprs[0], this.Emitter);
+                                var rr = this.Emitter.Resolver.ResolveNode(exprs[0]);
                                 type = rr.Type;
                             }
 
@@ -743,7 +735,7 @@ namespace Bridge.Translator
                             }
                             else
                             {
-                                var rr = this.Emitter.Resolver.ResolveNode(exprs[0], this.Emitter);
+                                var rr = this.Emitter.Resolver.ResolveNode(exprs[0]);
                                 type = rr.Type;
                             }
 
@@ -781,7 +773,7 @@ namespace Bridge.Translator
                                 }
                                 else
                                 {
-                                    var rr = this.Emitter.Resolver.ResolveNode(versionTypeExp, this.Emitter);
+                                    var rr = this.Emitter.Resolver.ResolveNode(versionTypeExp);
 
                                     if (rr != null && rr.ConstantValue != null && rr.ConstantValue is int)
                                     {
@@ -798,7 +790,7 @@ namespace Bridge.Translator
                             }
                             else
                             {
-                                version = this.Emitter.Translator.GetVersionContext().Compiler.Version;
+                                version = this.Emitter.Translator.GetVersionContext().Compiler.FileVersion;
                             }
 
                             Write("\"", version, "\"");
@@ -881,7 +873,7 @@ namespace Bridge.Translator
                                 var directExpr = exprs[0] as DirectionExpression;
                                 if (directExpr != null)
                                 {
-                                    var rr = this.Emitter.Resolver.ResolveNode(exprs[0], this.Emitter) as ByReferenceResolveResult;
+                                    var rr = this.Emitter.Resolver.ResolveNode(exprs[0]) as ByReferenceResolveResult;
 
                                     if (rr != null && !(rr.ElementResult is LocalResolveResult))
                                     {
@@ -1211,7 +1203,7 @@ namespace Bridge.Translator
                         enumType = type.GetDefinition().EnumUnderlyingType;
                     }
                 }
-                this.Write(BridgeTypes.ToJsName(enumType, this.Emitter));
+                this.Write(this.Emitter.ToJsName(enumType));
             }
             else
             {
@@ -1264,7 +1256,7 @@ namespace Bridge.Translator
             {
                 if (modifier == "defaultFn")
                 {
-                    this.Write(BridgeTypes.ToJsName((AstType)def, this.Emitter) + "." + JS.Funcs.GETDEFAULTVALUE);
+                    this.Write(this.Emitter.ToJsName((AstType)def) + "." + JS.Funcs.GETDEFAULTVALUE);
                 }
                 else
                 {
@@ -1275,7 +1267,7 @@ namespace Bridge.Translator
             {
                 if (modifier == "defaultFn")
                 {
-                    this.Write(BridgeTypes.ToJsName((IType)def, this.Emitter) + "." + JS.Funcs.GETDEFAULTVALUE);
+                    this.Write(this.Emitter.ToJsName((IType)def) + "." + JS.Funcs.GETDEFAULTVALUE);
                 }
                 else
                 {
@@ -1363,7 +1355,7 @@ namespace Bridge.Translator
                 return true;
             }
 
-            var rr = this.Emitter.Resolver.ResolveNode(expression, this.Emitter);
+            var rr = this.Emitter.Resolver.ResolveNode(expression);
             return this.IsSimpleResolveResult(rr);
         }
 

@@ -32,7 +32,7 @@ namespace Bridge.Translator
         {
             IAttribute attribute = this.Attribute;
 
-            var type = this.Emitter.GetTypeDefinition(attribute.AttributeType);
+            var type = attribute.AttributeType.GetDefinition();
 
             var argsInfo = new ArgumentsInfo(this.Emitter, attribute);
 
@@ -76,7 +76,7 @@ namespace Bridge.Translator
                     if (String.IsNullOrEmpty(customCtor))
                     {
                         this.WriteNew();
-                        this.Write(BridgeTypes.ToJsName(attribute.AttributeType, this.Emitter));
+                        this.Write(this.Emitter.ToJsName(attribute.AttributeType));
                     }
                     else
                     {
@@ -183,7 +183,7 @@ namespace Bridge.Translator
 
             if (rr is TypeOfResolveResult)
             {
-                block.Write(BridgeTypes.ToJsName(((TypeOfResolveResult)rr).ReferencedType, block.Emitter));
+                block.Write(block.Emitter.ToJsName(((TypeOfResolveResult)rr).ReferencedType));
             }
             else if (rr is ArrayCreateResolveResult)
             {
@@ -388,14 +388,12 @@ namespace Bridge.Translator
 
             if (type.IsObjectLiteral())
             {
-                var key = BridgeTypes.GetTypeDefinitionKey(type);
-                var tinfo = this.Emitter.Types.FirstOrDefault(t => t.Key == key);
-
+                var tinfo = this.Emitter.Translator.Types.Get(type);
                 if (tinfo == null)
                 {
                     return inlineInit;
                 }
-                var itype = tinfo.Type as ITypeDefinition;
+                var itype = tinfo.Type;
 
                 var mode = 0;
                 if (attr.Constructor != null)

@@ -3,6 +3,7 @@ using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.TypeSystem;
 using System.Collections.Generic;
 using System.Linq;
+using Bridge.Contract.Constants;
 
 namespace Bridge.Translator
 {
@@ -24,7 +25,19 @@ namespace Bridge.Translator
             this.PartialTypeDeclarations = new List<TypeDeclaration>();
         }
 
+        public bool? IsOutputType
+        {
+            get;
+            set;
+        }
+
         public string Key
+        {
+            get;
+            set;
+        }
+
+        public int? Priority
         {
             get;
             set;
@@ -269,7 +282,7 @@ namespace Bridge.Translator
             set;
         }
 
-        public IType Type
+        public ITypeDefinition Type
         {
             get;
             set;
@@ -281,51 +294,26 @@ namespace Bridge.Translator
             set;
         }
 
-        public AstType GetBaseClass(IEmitter emitter)
+        public IType GetBaseClass(IEmitter emitter)
         {
             var types = this.GetBaseTypes(emitter);
-            var baseClass = types.FirstOrDefault(t => emitter.Resolver.ResolveNode(t, emitter).Type.Kind != TypeKind.Interface);
-
+            var baseClass = types.FirstOrDefault(t => t.Kind != TypeKind.Interface);
             return baseClass ?? types.First();
         }
 
-        private List<AstType> baseTypes;
+        private List<IType> baseTypes;
 
-        public List<AstType> GetBaseTypes(IEmitter emitter)
+        public List<IType> GetBaseTypes(IEmitter emitter)
         {
             if (this.baseTypes != null)
             {
                 return this.baseTypes;
             }
 
-            this.baseTypes = new List<AstType>();
-            this.baseTypes.AddRange(this.TypeDeclaration.BaseTypes);
-
-            foreach (var partialTypeDeclaration in this.PartialTypeDeclarations)
-            {
-                var appendTypes = new List<AstType>();
-                var insertTypes = new List<AstType>();
-                foreach (var baseType in partialTypeDeclaration.BaseTypes)
-                {
-                    var t = emitter.Resolver.ResolveNode(baseType, emitter);
-                    if (this.baseTypes.All(bt => emitter.Resolver.ResolveNode(bt, emitter).Type.FullName != t.Type.FullName))
-                    {
-                        if (t.Type.Kind != TypeKind.Interface)
-                        {
-                            insertTypes.Add(baseType);
-                        }
-                        else
-                        {
-                            appendTypes.Add(baseType);
-                        }
-                    }
-                }
-
-                this.baseTypes.AddRange(appendTypes);
-                this.baseTypes.InsertRange(0, insertTypes);
-            }
-
-            return this.baseTypes;
+            return this.baseTypes = new List<IType>(this.Type.DirectBaseTypes
+                .Where(t=>!t.GetDefinition().IsNonScriptable() && t.FullName != JS.Types.System.Object.NAME)
+                .OrderBy(t => t.Kind)
+            );
         }
 
         public string GetNamespace(IEmitter emitter, bool nons = false)
@@ -335,10 +323,9 @@ namespace Bridge.Translator
                 throw new System.ArgumentNullException("emitter");
             }
 
-            var bridgeType = emitter.BridgeTypes.Get(this.Key);
             var name = this.Namespace;
 
-            var typeName = emitter.GetCustomTypeName(bridgeType.Type,  false);
+            var typeName = emitter.GetCustomTypeName(this.Type, false);
             if (typeName != null)
             {
                 var i = typeName.LastIndexOf(".");
@@ -351,6 +338,29 @@ namespace Bridge.Translator
             }
 
             return name;
+        }
+
+        public override string ToString()
+        {
+            return this.Type.ToString();
+        }
+
+        protected bool Equals(TypeInfo other)
+        {
+            return Equals(this.Type, other.Type);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((TypeInfo) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Type != null ? this.Type.GetHashCode() : 0);
         }
     }
 }

@@ -86,12 +86,12 @@ namespace Bridge.Translator
             var argsExpressions = argsInfo.ArgumentsExpressions;
             var paramsArg = argsInfo.ParamsExpression;
 
-            var targetResolve = this.Emitter.Resolver.ResolveNode(invocationExpression, this.Emitter);
+            var targetResolve = this.Emitter.Resolver.ResolveNode(invocationExpression);
             var csharpInvocation = targetResolve as CSharpInvocationResolveResult;
             MemberReferenceExpression targetMember = invocationExpression.Target as MemberReferenceExpression;
             bool isObjectLiteral = csharpInvocation != null && csharpInvocation.Member.DeclaringTypeDefinition != null ? csharpInvocation.Member.DeclaringTypeDefinition.IsObjectLiteral() : false;
 
-            var interceptor = this.Emitter.Plugins.OnInvocation(this, this.InvocationExpression, targetResolve as InvocationResolveResult);
+            var interceptor = this.Emitter.Translator.Plugins.OnInvocation(this, this.InvocationExpression, targetResolve as InvocationResolveResult);
 
             if (interceptor.Cancel)
             {
@@ -191,7 +191,7 @@ namespace Bridge.Translator
 
             if (targetMember != null || isObjectLiteral)
             {
-                var member = targetMember != null ? this.Emitter.Resolver.ResolveNode(targetMember.Target, this.Emitter) : null;
+                var member = targetMember != null ? this.Emitter.Resolver.ResolveNode(targetMember.Target) : null;
 
                 var syntaxTree = invocationExpression.GetParent<SyntaxTree>();
                 var conditionals = syntaxTree == null ? null : syntaxTree.ConditionalSymbols;
@@ -253,7 +253,7 @@ namespace Bridge.Translator
 
                     if (invocationResult == null)
                     {
-                        invocationResult = this.Emitter.Resolver.ResolveNode(invocationExpression, this.Emitter) as InvocationResolveResult;
+                        invocationResult = this.Emitter.Resolver.ResolveNode(invocationExpression) as InvocationResolveResult;
                     }
 
                     if (invocationResult != null)
@@ -289,7 +289,7 @@ namespace Bridge.Translator
                                     }
                                     else
                                     {
-                                        string name = BridgeTypes.ToJsName(resolvedMethod.DeclaringType, this.Emitter, ignoreLiteralName: false) + ".";
+                                        string name = this.Emitter.ToJsName(resolvedMethod.DeclaringType, ignoreLiteralName: false) + ".";
                                         this.Write(name);
                                     }
 
@@ -383,7 +383,7 @@ namespace Bridge.Translator
             var proto = false;
             if (targetMember != null && targetMember.Target is BaseReferenceExpression)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(targetMember, this.Emitter) as MemberResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(targetMember) as MemberResolveResult;
 
                 if (rr != null)
                 {
@@ -410,18 +410,18 @@ namespace Bridge.Translator
             {
                 bool needComma = false;
 
-                var resolveResult = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(targetMember, this.Emitter);
+                var resolveResult = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(targetMember);
                 var baseType = resolveResult.Member.DeclaringTypeDefinition;
 
                 string name = null;
 
                 if (this.Emitter.TypeInfo.GetBaseTypes(this.Emitter).Any())
                 {
-                    name = BridgeTypes.ToJsName(this.Emitter.TypeInfo.GetBaseClass(this.Emitter), this.Emitter);
+                    name = this.Emitter.ToJsName(this.Emitter.TypeInfo.GetBaseClass(this.Emitter));
                 }
                 else
                 {
-                    name = BridgeTypes.ToJsName(baseType, this.Emitter);
+                    name = this.Emitter.ToJsName(baseType);
                 }
 
                 string baseMethod;
@@ -473,7 +473,7 @@ namespace Bridge.Translator
             }
             else
             {
-                var dynamicResolveResult = this.Emitter.Resolver.ResolveNode(invocationExpression, this.Emitter) as DynamicInvocationResolveResult;
+                var dynamicResolveResult = this.Emitter.Resolver.ResolveNode(invocationExpression) as DynamicInvocationResolveResult;
                 IMethod method = null;
 
                 if (dynamicResolveResult != null)
@@ -515,7 +515,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var targetResolveResult = this.Emitter.Resolver.ResolveNode(invocationExpression.Target, this.Emitter);
+                    var targetResolveResult = this.Emitter.Resolver.ResolveNode(invocationExpression.Target);
                     var invocationResolveResult = targetResolveResult as MemberResolveResult;
 
                     if (invocationResolveResult != null)
@@ -661,7 +661,7 @@ namespace Bridge.Translator
             var irr = targetResolve as InvocationResolveResult;
             if (irr != null && irr.Member.MemberDefinition != null && irr.Member.MemberDefinition.ReturnType.Kind == TypeKind.TypeParameter)
             {
-                Helpers.CheckValueTypeClone(this.Emitter.Resolver.ResolveNode(invocationExpression, this.Emitter), invocationExpression, this, pos);
+                Helpers.CheckValueTypeClone(this.Emitter.Resolver.ResolveNode(invocationExpression), invocationExpression, this, pos);
             }
 
             this.Emitter.ReplaceAwaiterByVar = oldValue;

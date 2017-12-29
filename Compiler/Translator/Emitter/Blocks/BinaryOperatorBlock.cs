@@ -196,7 +196,7 @@ namespace Bridge.Translator
 
                         var m = FindOperatorTrueOrFalse(left.Type, orElse);
 
-                        this.Write(BridgeTypes.ToJsName(m.DeclaringType, this.Emitter));
+                        this.Write(this.Emitter.ToJsName(m.DeclaringType));
                         this.WriteDot();
                         this.Write(OverloadsCollection.Create(this.Emitter, m).GetOverloadName());
 
@@ -263,7 +263,7 @@ namespace Bridge.Translator
                         this.Write(action + "(");
                     }
 
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
 
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());
@@ -305,8 +305,8 @@ namespace Bridge.Translator
 
         public static bool IsOperatorSimple(BinaryOperatorExpression binaryOperatorExpression, IEmitter emitter)
         {
-            var leftResolverResult = emitter.Resolver.ResolveNode(binaryOperatorExpression.Left, emitter);
-            var rightResolverResult = emitter.Resolver.ResolveNode(binaryOperatorExpression.Right, emitter);
+            var leftResolverResult = emitter.Resolver.ResolveNode(binaryOperatorExpression.Left);
+            var rightResolverResult = emitter.Resolver.ResolveNode(binaryOperatorExpression.Right);
             bool leftIsSimple = binaryOperatorExpression.Left is PrimitiveExpression || leftResolverResult.Type.IsKnownType(KnownTypeCode.String) ||
                                  leftResolverResult.Type.IsReferenceType != null && !leftResolverResult.Type.IsReferenceType.Value;
 
@@ -353,15 +353,15 @@ namespace Bridge.Translator
                 return;
             }
 
-            var resolveOperator = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression, this.Emitter);
+            var resolveOperator = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression);
             var expectedType = this.Emitter.Resolver.Resolver.GetExpectedType(binaryOperatorExpression);
             bool isDecimalExpected = Helpers.IsDecimalType(expectedType, this.Emitter.Resolver);
             bool isDecimal = Helpers.IsDecimalType(resolveOperator.Type, this.Emitter.Resolver);
             bool isLongExpected = Helpers.Is64Type(expectedType, this.Emitter.Resolver);
             bool isLong = Helpers.Is64Type(resolveOperator.Type, this.Emitter.Resolver);
             OperatorResolveResult orr = resolveOperator as OperatorResolveResult;
-            var leftResolverResult = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Left, this.Emitter);
-            var rightResolverResult = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Right, this.Emitter);
+            var leftResolverResult = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Left);
+            var rightResolverResult = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Right);
             var charToString = -1;
             string variable = null;
             bool leftIsNull = this.BinaryOperatorExpression.Left is NullReferenceExpression;
@@ -403,7 +403,7 @@ namespace Bridge.Translator
 
             if (parentIsString)
             {
-                var parentResolveOperator = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Parent, this.Emitter) as OperatorResolveResult;
+                var parentResolveOperator = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Parent) as OperatorResolveResult;
 
                 if (parentResolveOperator != null && parentResolveOperator.UserDefinedOperatorMethod != null || BinaryOperatorBlock.IsOperatorSimple(parentBinary, this.Emitter))
                 {
@@ -835,7 +835,7 @@ namespace Bridge.Translator
                 }
                 else if (!method.DeclaringTypeDefinition.IsExternal())
                 {
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
 
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());

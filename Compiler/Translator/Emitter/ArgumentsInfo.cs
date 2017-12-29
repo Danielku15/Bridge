@@ -132,7 +132,7 @@ namespace Bridge.Translator
             this.Expression = null;
 
             var arguments = initializer.Arguments.ToList();
-            this.ResolveResult = emitter.Resolver.ResolveNode(initializer, emitter) as InvocationResolveResult;
+            this.ResolveResult = emitter.Resolver.ResolveNode(initializer) as InvocationResolveResult;
 
             this.BuildArgumentsList(arguments);
             if (this.ResolveResult != null)
@@ -147,7 +147,7 @@ namespace Bridge.Translator
             this.Expression = invocationExpression;
 
             var arguments = invocationExpression.Arguments.ToList();
-            var rr = emitter.Resolver.ResolveNode(invocationExpression, emitter);
+            var rr = emitter.Resolver.ResolveNode(invocationExpression);
             this.ResolveResult = rr as InvocationResolveResult;
             var drr = rr as DynamicInvocationResolveResult;
 
@@ -194,7 +194,7 @@ namespace Bridge.Translator
             this.Expression = invocationExpression;
 
             var arguments = invocationExpression.Arguments.ToList();
-            this.ResolveResult = rr ?? emitter.Resolver.ResolveNode(invocationExpression, emitter) as InvocationResolveResult;
+            this.ResolveResult = rr ?? emitter.Resolver.ResolveNode(invocationExpression) as InvocationResolveResult;
 
             this.BuildArgumentsList(arguments);
             if (this.ResolveResult != null)
@@ -252,7 +252,7 @@ namespace Bridge.Translator
             this.Expression = objectCreateExpression;
 
             var arguments = objectCreateExpression.Arguments.ToList();
-            var rr = emitter.Resolver.ResolveNode(objectCreateExpression, emitter);
+            var rr = emitter.Resolver.ResolveNode(objectCreateExpression);
             var drr = rr as DynamicInvocationResolveResult;
             if (drr != null)
             {

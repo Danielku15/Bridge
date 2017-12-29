@@ -23,7 +23,7 @@ namespace Bridge.Translator.Tests
 
         private static EmitBlock GetEmitBlock(bool configEnabled, TypeAccessibility? typeAccessibility, IEnumerable<TypeDescriptor> types)
         {
-            var bridgeTypes = Substitute.For<BridgeTypes>();
+            var bridgeTypes = Substitute.For<BridgeTypes>(Substitute.For<ITranslator>());
 
             foreach (var type in types)
             {
@@ -110,7 +110,7 @@ namespace Bridge.Translator.Tests
                 if (expectResult)
                 {
                     Assert.AreEqual(1, reflectableTypes.Length, typeName + " Count");
-                    Assert.AreEqual(typeName, reflectableTypes[0].FullName, typeName + " FullName");
+                    Assert.AreEqual(typeName, reflectableTypes[0].Type.FullName, typeName + " FullName");
                 }
                 else
                 {

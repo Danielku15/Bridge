@@ -1026,7 +1026,7 @@ namespace Bridge.Contract
         public static string GetInterfaceMemberName(IEmitter emitter, IMember interfaceMember, string name, string prefix, bool withoutTypeParams = false, bool isSetter = false)
         {
             var interfaceMemberName = name ?? OverloadsCollection.Create(emitter, interfaceMember, isSetter).GetOverloadName(true, prefix);
-            var interfaceName = BridgeTypes.ToJsName(interfaceMember.DeclaringType, emitter, withoutTypeParams, false, true);
+            var interfaceName = emitter.ToJsName(interfaceMember.DeclaringType, withoutTypeParams, false, true);
 
             if (interfaceName.StartsWith("\""))
             {
@@ -1202,7 +1202,7 @@ namespace Bridge.Contract
 
         protected virtual IMember FindMember(EntityDeclaration entity)
         {
-            var rr = this.Emitter.Resolver.ResolveNode(entity, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(entity) as MemberResolveResult;
 
             if (rr != null)
             {

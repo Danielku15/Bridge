@@ -144,32 +144,27 @@ namespace Bridge.Translator.Tests.Helpers
             return typeDefinition;
         }
 
-        public BridgeType AddBridgeType(BridgeTypes bridgeTypes, TypeDescriptor typeDescriptor)
+        public ITypeInfo AddBridgeType(BridgeTypes bridgeTypes, TypeDescriptor typeDescriptor)
         {
             var type = SubstituteType(typeDescriptor);
 
             var key = type.FullName;
-            var bridgeType = Substitute.For<BridgeType>(key);
 
-            bridgeType.Type.Returns(type);
-
+            ITypeInfo typeInfo = Substitute.For<ITypeInfo>();
+            typeInfo.Name.Returns(type.Name);
+            typeInfo.Namespace.Returns(type.Namespace);
+            typeInfo.Type.Returns(type);
             if (typeDescriptor.InThisAssembly)
             {
-                var typeInfo = Substitute.For<ITypeInfo>();
-                typeInfo.Name.Returns(type.Name);
-                typeInfo.Namespace.Returns(type.Namespace);
-                typeInfo.Key.Returns(key);
-                bridgeType.TypeInfo.Returns(typeInfo);
+                typeInfo.IsOutputType.Returns(true);
             }
             else
             {
-                ITypeInfo typeInfo = null;
-                bridgeType.TypeInfo.Returns(typeInfo);
+                typeInfo.IsOutputType.Returns((bool?)null);
             }
-
-            bridgeTypes.Add(key, bridgeType);
-
-            return bridgeType;
+            typeInfo.Key.Returns(key);
+           
+            return typeInfo;
         }
 
         public string GetTypeNamespace(string fullName)

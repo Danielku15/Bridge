@@ -27,7 +27,7 @@ namespace Bridge.Translator
 
         protected void EmitOperatorDeclaration(OperatorDeclaration operatorDeclaration)
         {
-            var rr = this.Emitter.Resolver.ResolveNode(operatorDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(operatorDeclaration) as MemberResolveResult;
             if (rr != null && rr.Member != null && rr.Member.IsExternal())
             {
                 return;

@@ -16,7 +16,7 @@ namespace Bridge.Translator
 {
     class CompilerExtensionInterpreter : DepthFirstAstVisitor
     {
-        private readonly Inspector _inspector;
+        private readonly IMemberResolver _resolver;
         private readonly BlockStatement _statement;
 
         private Dictionary<string, AttributeBuilderDetails> _attributeBuilderVariables;
@@ -29,10 +29,10 @@ namespace Bridge.Translator
             public AttributeTarget Target { get; set; }
         }
 
-        public CompilerExtensionInterpreter(Inspector inspector, BlockStatement statement)
+        public CompilerExtensionInterpreter(IMemberResolver resolver, BlockStatement statement)
         {
-            _inspector = inspector;
-            _statement = statement;
+            this._statement = statement;
+            this._resolver = resolver;
         }
 
         public void Execute()
@@ -62,7 +62,7 @@ namespace Bridge.Translator
             // we allow variable declarations. they might make it easier to invoke compiler extensions 
             // e.g. var attributes = context.Attributes;
             // attributes.Class<Test>()...
-            var variableType = _inspector.Resolver.ResolveNode(variableDeclarationStatement.Type, _inspector.Emitter);
+            var variableType = this._resolver.ResolveNode(variableDeclarationStatement.Type);
             if (variableType.Type == null)
             {
                 throw new EmitterException(variableDeclarationStatement,
@@ -81,7 +81,7 @@ namespace Bridge.Translator
         public override void VisitAssignmentExpression(AssignmentExpression assignmentExpression)
         {
             // we allow/ignore assignments. they might make it easier to invoke compiler extensions 
-            var resolvedVariable = _inspector.Resolver.ResolveNode(assignmentExpression.Left, _inspector.Emitter) as LocalResolveResult;
+            var resolvedVariable = this._resolver.ResolveNode(assignmentExpression.Left) as LocalResolveResult;
             if (resolvedVariable == null || resolvedVariable.Variable == null)
             {
                 return;
@@ -100,7 +100,7 @@ namespace Bridge.Translator
             var invocation = variableInitializer as InvocationExpression;
             if (invocation != null)
             {
-                var invocedMethodRR = _inspector.Resolver.ResolveNode(invocation, _inspector.Emitter) as InvocationResolveResult;
+                var invocedMethodRR = this._resolver.ResolveNode(invocation) as InvocationResolveResult;
                 if (invocedMethodRR == null || invocedMethodRR.Member == null || invocedMethodRR.Member.DeclaringType.FullName != "Bridge.CompilerServices.IAttributesContext")
                 {
                     return null;
@@ -113,7 +113,7 @@ namespace Bridge.Translator
                             IAssembly assembly;
                             if (invocation.Arguments.Count == 0)
                             {
-                                assembly = _inspector.Resolver.Compilation.MainAssembly;
+                                assembly = this._resolver.Compilation.MainAssembly;
                             }
                             else
                             {
@@ -126,11 +126,11 @@ namespace Bridge.Translator
                                 var assemblyName = assemblyNameArgument.ConstantValue.ToString();
 
 
-                                assembly = _inspector.Resolver.Compilation.Assemblies
+                                assembly = this._resolver.Compilation.Assemblies
                                     .FirstOrDefault(a => a.FullAssemblyName == assemblyName);
                                 if (assembly == null)
                                 {
-                                    assembly = _inspector.Resolver.Compilation.Assemblies
+                                    assembly = this._resolver.Compilation.Assemblies
                                         .FirstOrDefault(a => a.AssemblyName == assemblyName);
                                 }
 
@@ -180,7 +180,7 @@ namespace Bridge.Translator
 
                             AttributeBuilderDetails details = new AttributeBuilderDetails();
                             var accessedMemberRR =
-                                _inspector.Resolver.ResolveNode(lambda.Body, _inspector.Emitter) as MemberResolveResult;
+                                this._resolver.ResolveNode(lambda.Body) as MemberResolveResult;
                             if (accessedMemberRR == null || accessedMemberRR.Member == null)
                             {
                                 throw new EmitterException(invocation,
@@ -313,7 +313,7 @@ namespace Bridge.Translator
 
                             AttributeBuilderDetails details = new AttributeBuilderDetails();
                             var accessedMemberRR =
-                                _inspector.Resolver.ResolveNode(lambda.Body, _inspector.Emitter) as InvocationResolveResult;
+                                this._resolver.ResolveNode(lambda.Body) as InvocationResolveResult;
                             if (accessedMemberRR == null || accessedMemberRR.Member == null || !(accessedMemberRR.Member is IMethod) || !((IMethod)accessedMemberRR.Member).IsConstructor)
                             {
                                 throw new EmitterException(invocation,
@@ -388,7 +388,7 @@ namespace Bridge.Translator
 
         public override void VisitInvocationExpression(InvocationExpression invocationExpression)
         {
-            var member = _inspector.Resolver.ResolveNode(invocationExpression, _inspector.Emitter) as MemberResolveResult;
+            var member = this._resolver.ResolveNode(invocationExpression) as MemberResolveResult;
             if (member == null || member.Member == null || !(member.Member is IMethod))
             {
                 throw new EmitterException(invocationExpression, "Could not resolve invoked method, please simplify method invocation.");
@@ -421,7 +421,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var targetRR = _inspector.Resolver.ResolveNode(memberReference.Target, _inspector.Emitter);
+                    var targetRR = this._resolver.ResolveNode(memberReference.Target);
                     if (targetRR == null || targetRR.IsError)
                     {
                         throw new EmitterException(invocationExpression,
@@ -454,7 +454,7 @@ namespace Bridge.Translator
                 }
 
                 var newAttribute = (ObjectCreateExpression) arguments[0];
-                var attributeRR = _inspector.Resolver.ResolveNode(arguments[0], _inspector.Emitter) as InvocationResolveResult;
+                var attributeRR = this._resolver.ResolveNode(arguments[0]) as InvocationResolveResult;
                 if (attributeRR == null || attributeRR.Type == null || !(attributeRR.Member is IMethod) || !((IMethod)attributeRR.Member).IsConstructor)
                 {
                     throw new EmitterException(invocationExpression,

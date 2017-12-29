@@ -11,7 +11,7 @@ namespace Bridge.Translator
         {
             string version = null;
 
-            if (versionInfo != null && versionInfo.ProductVersion != null)
+            if (versionInfo?.ProductVersion != null)
             {
                 version = versionInfo.ProductVersion.Trim();
             }
@@ -20,52 +20,10 @@ namespace Bridge.Translator
             // This helps get compatibility with Mono when it returns empty (whitespace) when AssemblyVersion is not set
             if (version == null || version.All(x => x == '0' || x == '.'))
             {
-                version = Contract.Constants.JS.Types.System.Reflection.Assembly.Config.DEFAULT_VERSION;
+                version = JS.Types.System.Reflection.Assembly.Config.DEFAULT_VERSION;
             }
 
             return version;
-        }
-
-        System.Diagnostics.FileVersionInfo compilerVersionInfo;
-        private System.Diagnostics.FileVersionInfo GetCompilerVersion()
-        {
-            if (compilerVersionInfo == null)
-            {
-                try
-                {
-                    var compilerAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-                    compilerVersionInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(compilerAssembly.Location);
-                }
-                catch (System.Exception ex)
-                {
-                    this.Log.Error("Could not load executing assembly to get assembly info");
-                    this.Log.Error(ex.ToString());
-                }
-            }
-
-            return compilerVersionInfo;
-        }
-
-        System.Diagnostics.FileVersionInfo assemblyVersionInfo;
-        private System.Diagnostics.FileVersionInfo GetAssemblyVersion()
-        {
-            if (assemblyVersionInfo == null)
-            {
-                assemblyVersionInfo = GetAssemblyVersionByPath(this.AssemblyLocation);
-            }
-
-            return assemblyVersionInfo;
-        }
-
-        System.Diagnostics.FileVersionInfo bridgeVersionInfo;
-        private System.Diagnostics.FileVersionInfo GetBridgeAssemblyVersion()
-        {
-            if (bridgeVersionInfo == null)
-            {
-                bridgeVersionInfo = GetAssemblyVersionByPath(this.BridgeLocation);
-            }
-
-            return bridgeVersionInfo;
         }
 
         private System.Diagnostics.FileVersionInfo GetAssemblyVersionByPath(string path)
@@ -84,24 +42,24 @@ namespace Bridge.Translator
             return fileVerionInfo;
         }
 
-        private VersionContext versionContext;
+        private VersionContext _versionContext;
 
         public VersionContext GetVersionContext()
         {
-            if (versionContext == null)
+            if (this._versionContext == null)
             {
-                versionContext = new VersionContext();
+                this._versionContext = new VersionContext
+                {
+                    Assembly = this.GetVersionFromFileVersionInfo(this.GetAssemblyVersionByPath(this.AssemblyLocation)),
+                    Bridge = this.GetAssemblyVersionByPath(this.BridgeLocation),
+                    Compiler = this.GetAssemblyVersionByPath(System.Reflection.Assembly.GetExecutingAssembly().Location)
+                };
 
-                versionContext.Assembly = GetVersionFromFileVersionInfo(GetAssemblyVersion());
-                versionContext.Assembly.Description = GetAssemblyDescription(AssemblyDefinition);
-                versionContext.Assembly.Title = GetAssemblyTitle(AssemblyDefinition);
-
-                versionContext.Bridge = GetVersionFromFileVersionInfo(GetBridgeAssemblyVersion());
-
-                versionContext.Compiler = GetVersionFromFileVersionInfo(GetCompilerVersion());
+                this._versionContext.Assembly.Description = GetAssemblyDescription(this.AssemblyDefinition);
+                this._versionContext.Assembly.Title = GetAssemblyTitle(this.AssemblyDefinition);
             }
 
-            return versionContext;
+            return this._versionContext;
         }
 
         private static string GetAssemblyDescription(AssemblyDefinition provider)
@@ -115,10 +73,7 @@ namespace Bridge.Translator
                 assemblyDescription = assemblyDescriptionAttribute.ConstructorArguments[0].Value as string;
             }
 
-            if (assemblyDescription != null)
-            {
-                assemblyDescription = assemblyDescription.Trim();
-            }
+            assemblyDescription = assemblyDescription?.Trim();
 
             return assemblyDescription;
         }
@@ -135,10 +90,7 @@ namespace Bridge.Translator
                 assemblyDescription = assemblyDescriptionAttribute.ConstructorArguments[0].Value as string;
             }
 
-            if (assemblyDescription != null)
-            {
-                assemblyDescription = assemblyDescription.Trim();
-            }
+            assemblyDescription = assemblyDescription?.Trim();
 
             return assemblyDescription;
         }
@@ -150,10 +102,10 @@ namespace Bridge.Translator
                     ? new VersionContext.AssemblyVersion()
                     : new VersionContext.AssemblyVersion()
                     {
-                        CompanyName = versionInfo.CompanyName != null ? versionInfo.CompanyName.Trim() : null,
-                        Copyright = versionInfo.LegalCopyright != null ? versionInfo.LegalCopyright.Trim() : null,
-                        Version = GetProductVersionFromVersionInfo(versionInfo),
-                        Name = versionInfo.ProductName != null ? versionInfo.ProductName.Trim() : null
+                        CompanyName = versionInfo.CompanyName?.Trim(),
+                        Copyright = versionInfo.LegalCopyright?.Trim(),
+                        Version = this.GetProductVersionFromVersionInfo(versionInfo),
+                        Name = versionInfo.ProductName?.Trim()
                     };
         }
 
@@ -161,14 +113,14 @@ namespace Bridge.Translator
 
         private void LogProductInfo()
         {
-            var compilerInfo = this.GetCompilerVersion();
-
-            var bridgeInfo = this.GetBridgeAssemblyVersion();
+            var version = this.GetVersionContext();
+            var compilerInfo = version.Compiler;
+            var bridgeInfo = version.Bridge;
 
             this.Log.Info("Product info:");
             if (compilerInfo != null)
             {
-                this.Log.Info(string.Format("\t{0} version {1}", compilerInfo.ProductName, compilerInfo.ProductVersion));
+                this.Log.Info($"\t{compilerInfo.ProductName} version {compilerInfo.ProductVersion}");
             }
             else
             {
@@ -177,7 +129,7 @@ namespace Bridge.Translator
 
             if (bridgeInfo != null)
             {
-                this.Log.Info(string.Format("\t[{0} Framework, version {1}]", bridgeInfo.ProductName, bridgeInfo.ProductVersion));
+                this.Log.Info($"\t[{bridgeInfo.ProductName} Framework, version {bridgeInfo.ProductVersion}]");
             }
 
             if (compilerInfo != null)

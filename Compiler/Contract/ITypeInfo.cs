@@ -145,6 +145,11 @@ namespace Bridge.Contract
             set;
         }
 
+        int? Priority
+        {
+            get; set;
+        }
+
         List<IPluginDependency> Dependencies
         {
             get;
@@ -175,7 +180,7 @@ namespace Bridge.Contract
             set;
         }
 
-        IType Type
+        ITypeDefinition Type
         {
             get;
             set;
@@ -187,12 +192,18 @@ namespace Bridge.Contract
             set;
         }
 
+        bool? IsOutputType
+        {
+            get;
+            set;
+        }
+
         bool HasRealStatic(IEmitter emitter);
         bool HasRealInstantiable(IEmitter emitter);
 
-        List<AstType> GetBaseTypes(IEmitter emitter);
+        List<IType> GetBaseTypes(IEmitter emitter);
 
-        AstType GetBaseClass(IEmitter emitter);
+        IType GetBaseClass(IEmitter emitter);
 
         string GetNamespace(IEmitter emitter, bool nons = false);
     }

@@ -54,7 +54,7 @@ namespace Bridge.Translator
 
                 if (memberResolveResult == null)
                 {
-                    memberResolveResult = block.Emitter.Resolver.ResolveNode(expression.Parent, block.Emitter) as MemberResolveResult;
+                    memberResolveResult = block.Emitter.Resolver.ResolveNode(expression.Parent) as MemberResolveResult;
                 }
 
                 if (memberResolveResult != null)
@@ -98,7 +98,7 @@ namespace Bridge.Translator
                 else if (Helpers.IsDecimalType(toType, block.Emitter.Resolver) && !Helpers.IsDecimalType(fromType, block.Emitter.Resolver))
                 {
                     block.Write(JS.Types.SYSTEM_DECIMAL + "(");
-                    block.AfterOutput += ", null, " + BridgeTypes.ToJsName(fromType, block.Emitter) + ")";
+                    block.AfterOutput += ", null, " + block.Emitter.ToJsName(fromType) + ")";
                 }
                 else if (Helpers.IsDecimalType(fromType, block.Emitter.Resolver))
                 {
@@ -307,7 +307,7 @@ namespace Bridge.Translator
             else
             {
                 block.Write(JS.Types.SYSTEM_DECIMAL + ".toInt(");
-                block.AfterOutput = ", " + BridgeTypes.ToJsName(expectedType, block.Emitter) + ")";
+                block.AfterOutput = ", " + block.Emitter.ToJsName(expectedType) + ")";
             }
         }
 
@@ -325,7 +325,7 @@ namespace Bridge.Translator
                 block.WriteOpenParentheses();
 
                 block.AfterOutput += ", ";
-                block.AfterOutput += BridgeTypes.ToJsName(expectedType, block.Emitter);
+                block.AfterOutput += block.Emitter.ToJsName(expectedType);
                 block.AfterOutput += ")";
             }
             else
@@ -408,9 +408,9 @@ namespace Bridge.Translator
             var binaryOperatorExpression = expression as BinaryOperatorExpression;
             if (binaryOperatorExpression != null)
             {
-                var rr = block.Emitter.Resolver.ResolveNode(expression, block.Emitter);
-                var leftResolverResult = block.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Left, block.Emitter);
-                var rightResolverResult = block.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Right, block.Emitter);
+                var rr = block.Emitter.Resolver.ResolveNode(expression);
+                var leftResolverResult = block.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Left);
+                var rightResolverResult = block.Emitter.Resolver.ResolveNode(binaryOperatorExpression.Right);
                 if (rr != null)
                 {
                     if (binaryOperatorExpression.Operator == BinaryOperatorType.Multiply &&
@@ -433,9 +433,9 @@ namespace Bridge.Translator
             var assignmentExpression = expression as AssignmentExpression;
             if (assignmentExpression != null)
             {
-                var leftResolverResult = block.Emitter.Resolver.ResolveNode(assignmentExpression.Left, block.Emitter);
-                var rightResolverResult = block.Emitter.Resolver.ResolveNode(assignmentExpression.Right, block.Emitter);
-                var rr = block.Emitter.Resolver.ResolveNode(assignmentExpression, block.Emitter);
+                var leftResolverResult = block.Emitter.Resolver.ResolveNode(assignmentExpression.Left);
+                var rightResolverResult = block.Emitter.Resolver.ResolveNode(assignmentExpression.Right);
+                var rr = block.Emitter.Resolver.ResolveNode(assignmentExpression);
 
                 if (assignmentExpression.Operator == AssignmentOperatorType.Multiply &&
                     !(block.Emitter.IsJavaScriptOverflowMode ||
@@ -476,7 +476,7 @@ namespace Bridge.Translator
                 }
 
                 block.AfterOutput += ", ";
-                block.AfterOutput += BridgeTypes.ToJsName(targetType, block.Emitter);
+                block.AfterOutput += block.Emitter.ToJsName(targetType);
                 block.AfterOutput += ")";
             }
             else
@@ -542,7 +542,7 @@ namespace Bridge.Translator
 
                     bool skipInnerWrap = false;
 
-                    var rr = block.Emitter.Resolver.ResolveNode(expression is CastExpression ? ((CastExpression)expression).Expression : expression, block.Emitter);
+                    var rr = block.Emitter.Resolver.ResolveNode(expression is CastExpression ? ((CastExpression)expression).Expression : expression);
                     var memberTargetrr = rr as MemberResolveResult;
                     bool isField = memberTargetrr != null && memberTargetrr.Member is IField &&
                                (memberTargetrr.TargetResult is ThisResolveResult ||

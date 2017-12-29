@@ -20,7 +20,6 @@ namespace Bridge.Translator
         public CSharpUnresolvedFile ParsedFile
         {
             get;
-            private set;
         }
     }
 }

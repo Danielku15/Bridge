@@ -1,34 +1,18 @@
 using Bridge.Contract;
 using ICSharpCode.NRefactory.TypeSystem;
 using System.Collections.Generic;
+using ICSharpCode.NRefactory.CSharp;
 
 namespace Bridge.Translator
 {
-    public partial class Emitter : Visitor, IEmitter
+    public partial class Emitter : IEmitter
     {
-        public Emitter(BridgeTypes bridgeTypes,
-            List<ITypeInfo> types,
-            IMemberResolver resolver,
-            Dictionary<string, ITypeInfo> typeInfoDefinitions,
-            ILogger logger)
+        public Emitter(ITranslator translator)
         {
-            this.Log = logger;
-
-            this.Resolver = resolver;
-            this.TypeInfoDefinitions = typeInfoDefinitions;
-            this.Types = types;
-            this.BridgeTypes = bridgeTypes;
-
-            this.BridgeTypes.InitItems(this);
-
-            logger.Trace("Sorting types infos by name...");
-            this.Types.Sort(this.CompareTypeInfosByName);
-            logger.Trace("Sorting types infos by name done");
-
-            this.SortTypesByInheritance();
-
-            this.AssignmentType = ICSharpCode.NRefactory.CSharp.AssignmentOperatorType.Any;
-            this.UnaryOperatorType = ICSharpCode.NRefactory.CSharp.UnaryOperatorType.Any;
+            this.InitialLevel = 1;
+            this.Translator = translator;
+            this.AssignmentType = AssignmentOperatorType.Any;
+            this.UnaryOperatorType = UnaryOperatorType.Any;
             this.JsDoc = new JsDoc();
             this.AnonymousTypes = new Dictionary<AnonymousType, IAnonymousTypeConfig>();
             this.AutoStartupMethods = new List<string>();
@@ -57,7 +41,8 @@ namespace Bridge.Translator
             {
                 var autoMethods = string.Join(", ", this.AutoStartupMethods);
 
-                throw (TranslatorException)Bridge.Translator.TranslatorException.Create("Program has more than one entry point defined - {0}", autoMethods);
+                throw (TranslatorException) TranslatorException.Create(
+                    "Program has more than one entry point defined - {0}", autoMethods);
             }
 
             var output = this.TransformOutputs();
@@ -69,11 +54,11 @@ namespace Bridge.Translator
 
         private IEnumerable<IAbstractEmitterBlock> GetBlocks()
         {
-            yield return new Bridge.Translator.EmitBlock(this);
+            yield return new EmitBlock(this);
 
             if (this.AssemblyInfo.GenerateTypeScript)
             {
-                yield return new Bridge.Translator.TypeScript.EmitBlock(this);
+                yield return new TypeScript.EmitBlock(this);
             }
         }
     }

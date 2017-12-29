@@ -59,7 +59,7 @@ namespace Bridge.Contract
 
             if (this.VarInitializer != null)
             {
-                var rr = emitter.Resolver.ResolveNode(this.VarInitializer, emitter) as MemberResolveResult;
+                var rr = emitter.Resolver.ResolveNode(this.VarInitializer) as MemberResolveResult;
                 fieldName = OverloadsCollection.Create(emitter, rr.Member).GetOverloadName(false, null, withoutTypeParams);
             }
             else if (this.Entity is PropertyDeclaration)
@@ -70,7 +70,7 @@ namespace Bridge.Contract
             {
                 if (this.Entity != null)
                 {
-                    var rr = emitter.Resolver.ResolveNode(this.Entity, emitter) as MemberResolveResult;
+                    var rr = emitter.Resolver.ResolveNode(this.Entity) as MemberResolveResult;
 
                     if (rr != null)
                     {

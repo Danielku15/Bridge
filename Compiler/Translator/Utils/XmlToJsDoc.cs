@@ -1,17 +1,16 @@
 using Bridge.Contract.Constants;
-
 using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.Semantics;
 using ICSharpCode.NRefactory.TypeSystem;
-using ICSharpCode.NRefactory.TypeSystem.Implementation;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml;
+using Bridge.Contract;
 
-namespace Bridge.Contract
+namespace Bridge.Translator
 {
     public class XmlToJSConstants
     {
@@ -23,7 +22,7 @@ namespace Bridge.Contract
 
     public class XmlToJsDoc
     {
-        private const char newLine = Bridge.Contract.XmlToJSConstants.DEFAULT_LINE_SEPARATOR;
+        private const char newLine = XmlToJSConstants.DEFAULT_LINE_SEPARATOR;
 
         public static void EmitComment(IAbstractEmitterBlock block, AstNode node, bool? getter = null, VariableInitializer varInitializer = null)
         {
@@ -41,7 +40,7 @@ namespace Bridge.Contract
             }
 
             object value = null;
-            var rr = block.Emitter.Resolver.ResolveNode(varInitializer ?? node, block.Emitter);
+            var rr = block.Emitter.Resolver.ResolveNode(varInitializer ?? node);
             string source = BuildCommentString(visitor.Comments);
 
             if (node is FieldDeclaration)
@@ -58,7 +57,7 @@ namespace Bridge.Contract
                 var eventDecl = (EventDeclaration)node;
                 foreach (var evVar in eventDecl.Variables)
                 {
-                    var ev_rr = block.Emitter.Resolver.ResolveNode(evVar, block.Emitter);
+                    var ev_rr = block.Emitter.Resolver.ResolveNode(evVar);
                     var memberResolveResult = ev_rr as MemberResolveResult;
                     var ev = memberResolveResult.Member as IEvent;
 
@@ -320,7 +319,8 @@ namespace Bridge.Contract
                     {
                         try
                         {
-                            exceptionType = XmlToJsDoc.ToJavascriptName(emitter.BridgeTypes.Get(attr.InnerText).Type, emitter);
+                            var resolved = ReflectionHelper.ParseReflectionName(attr.InnerText).Resolve(emitter.Resolver.Resolver.TypeResolveContext);
+                            exceptionType = XmlToJsDoc.ToJavascriptName(resolved, emitter);
                         }
                         catch
                         {
@@ -557,12 +557,11 @@ namespace Bridge.Contract
         {
             var list = new List<string>();
 
-            foreach (var t in emitter.BridgeTypes.Get(type).TypeInfo.GetBaseTypes(emitter))
+            foreach (var t in emitter.Translator.Types.Get(type).GetBaseTypes(emitter))
             {
                 var name = XmlToJsDoc.ToJavascriptName(t, emitter);
 
-                var rr = emitter.Resolver.ResolveNode(t, emitter);
-                if (rr.Type.Kind == TypeKind.Interface)
+                if (t.Kind == TypeKind.Interface)
                 {
                     name = "+" + name;
                 }
@@ -656,7 +655,7 @@ namespace Bridge.Contract
             var composedType = astType as ComposedType;
             if (composedType != null && composedType.ArraySpecifiers != null && composedType.ArraySpecifiers.Count > 0)
             {
-                return JS.Types.ARRAY + ".<" + BridgeTypes.ToTypeScriptName(composedType.BaseType, emitter) + ">";
+                return JS.Types.ARRAY + ".<" + emitter.ToTypeScriptName(composedType.BaseType) + ">";
             }
 
             var simpleType = astType as SimpleType;
@@ -665,7 +664,7 @@ namespace Bridge.Contract
                 return "object";
             }
 
-            var resolveResult = emitter.Resolver.ResolveNode(astType, emitter);
+            var resolveResult = emitter.Resolver.ResolveNode(astType);
             return XmlToJsDoc.ToJavascriptName(resolveResult.Type, emitter);
         }
 
@@ -673,7 +672,7 @@ namespace Bridge.Contract
         {
             if (type.Kind == TypeKind.Delegate)
             {
-                var delegateName = BridgeTypes.ConvertName(type.FullName);
+                var delegateName = type.FullName.ConvertName();
 
                 if (!emitter.JsDoc.Callbacks.Contains(delegateName))
                 {
@@ -765,29 +764,29 @@ namespace Bridge.Contract
                 return "?" + XmlToJsDoc.ToJavascriptName(NullableType.GetUnderlyingType(type), emitter);
             }
 
-            BridgeType bridgeType = emitter.BridgeTypes.Get(type, true);
-            //string name = BridgeTypes.ConvertName(type.FullName);
+            var bridgeType = emitter.Translator.Types.Get(type);
+            //string name = Types.ConvertName(type.FullName);
 
             var name = type.Namespace;
 
-            var hasTypeDef = bridgeType != null && bridgeType.Type.GetDefinition() != null;
+            var hasTypeDef = bridgeType != null && bridgeType.Type != null;
             bool isNested = false;
             if (hasTypeDef)
             {
-                var typeDef = bridgeType.Type.GetDefinition();
+                var typeDef = bridgeType.Type;
                 if (typeDef.DeclaringType != null)
                 {
-                    name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + BridgeTypes.GetParentNames(emitter, typeDef);
+                    name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + emitter.GetParentNames(typeDef);
                     isNested = true;
                 }
 
-                name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + BridgeTypes.ConvertName(typeDef.Name);
+                name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + typeDef.Name.ConvertName();
             }
             else
             {
                 if (type.DeclaringType != null)
                 {
-                    name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + BridgeTypes.GetParentNames(emitter, type);
+                    name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + emitter.GetParentNames(type);
 
                     if (type.DeclaringType.TypeArguments.Count > 0)
                     {
@@ -796,13 +795,13 @@ namespace Bridge.Contract
                     isNested = true;
                 }
 
-                name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + BridgeTypes.ConvertName(type.Name);
+                name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + type.Name.ConvertName();
             }
 
             bool isCustomName = false;
             if (bridgeType != null)
             {
-                name = BridgeTypes.AddModule(emitter, name, bridgeType, false, isNested, out isCustomName);
+                name = emitter.AddModule(name, bridgeType, false, isNested, out isCustomName);
             }
 
             if (!hasTypeDef && !isCustomName && type.TypeArguments.Count > 0)
@@ -842,7 +841,7 @@ namespace Bridge.Contract
 
     public class JsDocComment
     {
-        private const char newLine = Bridge.Contract.XmlToJSConstants.DEFAULT_LINE_SEPARATOR;
+        private const char newLine = XmlToJSConstants.DEFAULT_LINE_SEPARATOR;
 
         public JsDocComment()
         {

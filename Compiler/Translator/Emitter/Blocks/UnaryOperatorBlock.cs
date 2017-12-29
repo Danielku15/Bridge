@@ -52,7 +52,7 @@ namespace Bridge.Translator
                         this.Write(JS.Types.SYSTEM_NULLABLE + "." + JS.Funcs.Math.LIFT + "(");
                     }
 
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
 
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());
@@ -81,7 +81,7 @@ namespace Bridge.Translator
             var unaryOperatorExpression = this.UnaryOperatorExpression;
             var oldType = this.Emitter.UnaryOperatorType;
             var oldAccessor = this.Emitter.IsUnaryAccessor;
-            var resolveOperator = this.Emitter.Resolver.ResolveNode(unaryOperatorExpression, this.Emitter);
+            var resolveOperator = this.Emitter.Resolver.ResolveNode(unaryOperatorExpression);
             var expectedType = this.Emitter.Resolver.Resolver.GetExpectedType(unaryOperatorExpression);
             bool isDecimalExpected = Helpers.IsDecimalType(expectedType, this.Emitter.Resolver);
             bool isDecimal = Helpers.IsDecimalType(resolveOperator.Type, this.Emitter.Resolver);
@@ -131,7 +131,7 @@ namespace Bridge.Translator
             }
 
             var op = unaryOperatorExpression.Operator;
-            var argResolverResult = this.Emitter.Resolver.ResolveNode(unaryOperatorExpression.Expression, this.Emitter);
+            var argResolverResult = this.Emitter.Resolver.ResolveNode(unaryOperatorExpression.Expression);
             bool nullable = NullableType.IsNullable(argResolverResult.Type);
 
             if (nullable)
@@ -400,7 +400,7 @@ namespace Bridge.Translator
             var typeCode = isLong ? KnownTypeCode.Int64 : KnownTypeCode.Decimal;
             this.Emitter.UnaryOperatorType = op;
 
-            var argResolverResult = this.Emitter.Resolver.ResolveNode(this.UnaryOperatorExpression.Expression, this.Emitter);
+            var argResolverResult = this.Emitter.Resolver.ResolveNode(this.UnaryOperatorExpression.Expression);
             bool nullable = NullableType.IsNullable(argResolverResult.Type);
             bool isAccessor = false;
             var memberArgResolverResult = argResolverResult as MemberResolveResult;
@@ -683,7 +683,7 @@ namespace Bridge.Translator
                 }
                 else if (!method.DeclaringTypeDefinition.IsExternal())
                 {
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
 
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());

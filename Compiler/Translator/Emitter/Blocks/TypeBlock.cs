@@ -27,7 +27,7 @@ namespace Bridge.Translator
         {
             AstType astType = this.Type;
 
-            this.Write(BridgeTypes.ToJsName(astType, this.Emitter));
+            this.Write(this.Emitter.ToJsName(astType));
         }
     }
 }

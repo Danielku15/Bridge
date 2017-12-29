@@ -23,9 +23,9 @@ namespace Bridge.Translator.Logging
         private bool IsInitializedSuccessfully { get; set; }
         private int InitializationCount { get; set; }
         private bool IsCleanedUp { get; set; }
-        private Queue<BufferedMessage> Buffer { get; set; }
+        private Queue<BufferedMessage> Buffer { get; }
 
-        public bool AlwaysLogErrors { get { return false; } }
+        public bool AlwaysLogErrors => false;
         public string BaseDirectory { get; private set; }
         public string FullName { get; private set; }
         public string FileName { get; private set; }
@@ -36,8 +36,8 @@ namespace Bridge.Translator.Logging
 
         public FileLoggerWriter(string baseDir, string fileName, long? maxSize)
         {
-            Buffer = new Queue<BufferedMessage>();
-            SetParameters(baseDir, fileName, maxSize);
+            this.Buffer = new Queue<BufferedMessage>();
+            this.SetParameters(baseDir, fileName, maxSize);
         }
 
         public FileLoggerWriter() : this(null, null, null)
@@ -50,60 +50,43 @@ namespace Bridge.Translator.Logging
 
         public void SetParameters(string baseDir, string fileName, long? maxSize)
         {
-            IsInitializedSuccessfully = false;
-            IsCleanedUp = false;
-            InitializationCount = 0;
+            this.IsInitializedSuccessfully = false;
+            this.IsCleanedUp = false;
+            this.InitializationCount = 0;
 
-            if (string.IsNullOrEmpty(baseDir))
-            {
-                this.BaseDirectory = null;
-            }
-            else
-            {
-                this.BaseDirectory = (new FileHelper()).GetDirectoryAndFilenamePathComponents(baseDir)[0];
-            }
+            this.BaseDirectory = string.IsNullOrEmpty(baseDir)
+                ? null
+                : (new FileHelper()).GetDirectoryAndFilenamePathComponents(baseDir)[0];
 
             this.FileName = string.IsNullOrEmpty(fileName) ? LoggerFileName : Path.GetFileName(fileName);
             this.MaxLogFileSize = !maxSize.HasValue || maxSize.Value <= 0 ? LoggerFileMaxLength : maxSize.Value;
 
-            if (string.IsNullOrEmpty(this.BaseDirectory))
-            {
-                this.FullName = FileName;
-            }
-            else
-            {
-                this.FullName = Path.Combine(this.BaseDirectory, FileName);
-            }
+            this.FullName = string.IsNullOrEmpty(this.BaseDirectory)
+                ? this.FileName
+                : Path.Combine(this.BaseDirectory, this.FileName);
         }
 
-        private bool CanBeInitialized
-        {
-            get { return InitializationCount < MaxInitializationCount; }
-        }
+        private bool CanBeInitialized => this.InitializationCount < MaxInitializationCount;
 
         private bool CheckDirectoryAndLoggerSize()
         {
-            if (IsInitializedSuccessfully)
+            if (this.IsInitializedSuccessfully)
             {
                 return true;
             }
 
-            if (!CanBeInitialized)
+            if (!this.CanBeInitialized)
             {
-                Buffer.Clear();
+                this.Buffer.Clear();
                 return false;
             }
 
-            InitializationCount++;
+            this.InitializationCount++;
 
             try
             {
                 var loggerFile = new FileInfo(this.FullName);
-
-                if (!loggerFile.Directory.Exists)
-                {
-                    loggerFile.Directory.Create();
-                }
+                loggerFile.Directory.Create();
 
                 // Uncomment this lines if max file size logic required and handle fileMode in Flush()
                 //if (loggerFile.Exists && loggerFile.Length > MaxLogFileSize)
@@ -111,60 +94,60 @@ namespace Bridge.Translator.Logging
                 //    loggerFile.Delete();
                 //}
 
-                IsInitializedSuccessfully = true;
+                this.IsInitializedSuccessfully = true;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
 
-            return IsInitializedSuccessfully;
+            return this.IsInitializedSuccessfully;
         }
 
         private void WriteOrBuffer(LoggerLevel level, string message, bool useWriteLine)
         {
-            if (!(IsInitializedSuccessfully || CanBeInitialized))
+            if (!(this.IsInitializedSuccessfully || this.CanBeInitialized))
             {
                 return;
             }
 
-            Buffer.Enqueue(new BufferedMessage() { LoggerLevel = level, Message = message, UseWriteLine = useWriteLine });
+            this.Buffer.Enqueue(new BufferedMessage() { LoggerLevel = level, Message = message, UseWriteLine = useWriteLine });
 
-            if (BufferedMode)
+            if (this.BufferedMode)
             {
                 return;
             }
 
-            Flush();
+            this.Flush();
         }
 
         private void WriteOrBufferLine(LoggerLevel level, string s)
         {
-            WriteOrBuffer(level, s, true);
+            this.WriteOrBuffer(level, s, true);
         }
 
         private bool CheckLoggerLevel(LoggerLevel level)
         {
-            return level <= LoggerLevel;
+            return level <= this.LoggerLevel;
         }
 
         public void Flush()
         {
-            if (!CheckDirectoryAndLoggerSize())
+            if (!this.CheckDirectoryAndLoggerSize())
             {
                 return;
             }
 
-            if (Buffer.Any(x => CheckLoggerLevel(x.LoggerLevel)))
+            if (this.Buffer.Any(x => this.CheckLoggerLevel(x.LoggerLevel)))
             {
                 try
                 {
                     var fileMode = FileMode.Append;
 
-                    if (!IsCleanedUp)
+                    if (!this.IsCleanedUp)
                     {
                         fileMode = FileMode.Create;
-                        IsCleanedUp = true;
+                        this.IsCleanedUp = true;
                     }
 
                     FileInfo file = new FileInfo(this.FullName);
@@ -175,13 +158,11 @@ namespace Bridge.Translator.Logging
                         {
                             stream.Position = stream.Length;
 
-                            BufferedMessage message;
-
-                            while (Buffer.Count > 0)
+                            while (this.Buffer.Count > 0)
                             {
-                                message = Buffer.Dequeue();
+                                var message = this.Buffer.Dequeue();
 
-                                if (!CheckLoggerLevel(message.LoggerLevel))
+                                if (!this.CheckLoggerLevel(message.LoggerLevel))
                                 {
                                     continue;
                                 }
@@ -200,51 +181,50 @@ namespace Bridge.Translator.Logging
                         }
                     }
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
             }
             else
             {
-                Buffer.Clear();
+                this.Buffer.Clear();
             }
         }
 
         public void Error(string message)
         {
-            WriteOrBufferLine(LoggerLevel.Error, message);
+            this.WriteOrBufferLine(LoggerLevel.Error, message);
         }
 
         public void Error(string message, string file, int lineNumber, int columnNumber, int endLineNumber, int endColumnNumber)
         {
-            Error(message);
+            this.Error(message);
         }
 
         public void Warn(string message)
         {
-            WriteOrBufferLine(LoggerLevel.Warning, message);
+            this.WriteOrBufferLine(LoggerLevel.Warning, message);
         }
 
         public void Info(string message)
         {
-            WriteOrBufferLine(LoggerLevel.Info, message);
+            this.WriteOrBufferLine(LoggerLevel.Info, message);
         }
 
         public void Trace(string message)
         {
-            WriteOrBufferLine(LoggerLevel.Trace, message);
+            this.WriteOrBufferLine(LoggerLevel.Trace, message);
         }
 
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
         {
-            return;
         }
 
         ~FileLoggerWriter()

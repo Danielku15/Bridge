@@ -88,7 +88,7 @@ namespace Bridge.Translator
             var oldReplaceJump = this.Emitter.ReplaceJump;
             this.Emitter.ReplaceJump = false;
 
-            var rr = this.Emitter.Resolver.ResolveNode(this.Context, this.Emitter);
+            var rr = this.Emitter.Resolver.ResolveNode(this.Context);
 
             if (this.Context is Expression)
             {
@@ -228,7 +228,7 @@ namespace Bridge.Translator
 
         protected virtual void EmitLambda(IEnumerable<ParameterDeclaration> parameters, AstNode body, AstNode context)
         {
-            var rr = this.Emitter.Resolver.ResolveNode(context, this.Emitter);
+            var rr = this.Emitter.Resolver.ResolveNode(context);
             var oldLifting = this.Emitter.ForbidLifting;
             this.Emitter.ForbidLifting = false;
             var noLiftingRule = this.Emitter.Rules.Lambda == LambdaRule.Plain;
@@ -361,7 +361,7 @@ namespace Bridge.Translator
                     }
 
                     this.Emitter.Output.Remove(savedPos, this.Emitter.Output.Length - savedPos);
-                    this.Emitter.Output.Insert(savedPos, JS.Vars.D_ + "." + BridgeTypes.ToJsName(this.Emitter.TypeInfo.Type, this.Emitter, true) + "." + name);
+                    this.Emitter.Output.Insert(savedPos, JS.Vars.D_ + "." + this.Emitter.ToJsName(this.Emitter.TypeInfo.Type, true) + "." + name);
                 }
 
                 this.Emitter.ResetLevel(oldLevel);

@@ -1,5 +1,4 @@
 ﻿using ICSharpCode.NRefactory.CSharp;
-using ICSharpCode.NRefactory.CSharp.Resolver;
 using ICSharpCode.NRefactory.Semantics;
 using ICSharpCode.NRefactory.TypeSystem;
 using System;
@@ -114,7 +113,7 @@ namespace Bridge.Translator
             var methodDeclaration = node.GetParent<MethodDeclaration>();
             if (methodDeclaration != null)
             {
-                var rr = (MemberResolveResult)emitter.Resolver.ResolveNode(methodDeclaration, this.emitter);
+                var rr = (MemberResolveResult)emitter.Resolver.ResolveNode(methodDeclaration);
                 if (rr != null && rr.Member.HasInitPosition())
                 {
                     this._usedVariables.Add(null);
@@ -165,7 +164,7 @@ namespace Bridge.Translator
 
         public void CheckType(AstType type)
         {
-            var rr = this.emitter.Resolver.ResolveNode(type, this.emitter);
+            var rr = this.emitter.Resolver.ResolveNode(type);
 
             if (Helpers.HasTypeParameters(rr.Type))
             {
@@ -183,7 +182,7 @@ namespace Bridge.Translator
 
             if (this._usedVariables.Count == 0)
             {
-                var rr = this.emitter.Resolver.ResolveNode(indexerExpression, this.emitter);
+                var rr = this.emitter.Resolver.ResolveNode(indexerExpression);
                 var member = rr as MemberResolveResult;
 
                 bool isInterface = member != null && member.Member.DeclaringTypeDefinition != null && member.Member.DeclaringTypeDefinition.Kind == TypeKind.Interface;
@@ -217,7 +216,7 @@ namespace Bridge.Translator
         {
             if (this._usedVariables.Count == 0)
             {
-                var rr = this.emitter.Resolver.ResolveNode(expression, this.emitter);
+                var rr = this.emitter.Resolver.ResolveNode(expression);
                 var conversion = this.emitter.Resolver.Resolver.GetConversion(expression);
                 if (conversion != null && conversion.Method != null)
                 {
@@ -232,7 +231,7 @@ namespace Bridge.Translator
 
             if (this._usedVariables.Count == 0)
             {
-                var rr = this.emitter.Resolver.ResolveNode(memberReferenceExpression, this.emitter);
+                var rr = this.emitter.Resolver.ResolveNode(memberReferenceExpression);
 
                 var member = rr as MemberResolveResult;
 
@@ -258,7 +257,7 @@ namespace Bridge.Translator
 
         public override void VisitIdentifierExpression(IdentifierExpression identifierExpression)
         {
-            var rr = this.emitter.Resolver.ResolveNode(identifierExpression, this.emitter);
+            var rr = this.emitter.Resolver.ResolveNode(identifierExpression);
             this.CheckExpression(identifierExpression);
 
             if (this._usedVariables.Count == 0)
@@ -382,7 +381,7 @@ namespace Bridge.Translator
         {
             this.CheckExpression(binaryOperatorExpression);
 
-            var rr = this.emitter.Resolver.ResolveNode(binaryOperatorExpression, this.emitter) as OperatorResolveResult;
+            var rr = this.emitter.Resolver.ResolveNode(binaryOperatorExpression) as OperatorResolveResult;
             if (rr != null && rr.UserDefinedOperatorMethod != null)
             {
                 foreach (var typeArgument in rr.UserDefinedOperatorMethod.DeclaringType.TypeArguments)
@@ -404,7 +403,7 @@ namespace Bridge.Translator
         {
             this.CheckExpression(unaryOperatorExpression);
 
-            var rr = this.emitter.Resolver.ResolveNode(unaryOperatorExpression, this.emitter) as OperatorResolveResult;
+            var rr = this.emitter.Resolver.ResolveNode(unaryOperatorExpression) as OperatorResolveResult;
             if (rr != null && rr.UserDefinedOperatorMethod != null)
             {
                 foreach (var typeArgument in rr.UserDefinedOperatorMethod.DeclaringType.TypeArguments)
@@ -425,7 +424,7 @@ namespace Bridge.Translator
 
         public override void VisitAssignmentExpression(AssignmentExpression assignmentExpression)
         {
-            var rr = this.emitter.Resolver.ResolveNode(assignmentExpression, this.emitter) as OperatorResolveResult;
+            var rr = this.emitter.Resolver.ResolveNode(assignmentExpression) as OperatorResolveResult;
             if (rr != null && rr.UserDefinedOperatorMethod != null)
             {
                 foreach (var typeArgument in rr.UserDefinedOperatorMethod.DeclaringType.TypeArguments)
@@ -448,7 +447,7 @@ namespace Bridge.Translator
         {
             this.CheckExpression(invocationExpression);
 
-            var rr = this.emitter.Resolver.ResolveNode(invocationExpression, this.emitter) as InvocationResolveResult;
+            var rr = this.emitter.Resolver.ResolveNode(invocationExpression) as InvocationResolveResult;
 
             if (rr != null)
             {

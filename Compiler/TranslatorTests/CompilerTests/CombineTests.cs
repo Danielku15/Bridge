@@ -18,9 +18,7 @@ namespace Bridge.Translator.Tests.CompilerTests
         [Test]
         public void CombineTests_CheckTranslatorCombineMinifiedOnly_N3039()
         {
-            var translator = new Translator("", "");
-
-            translator.Log = Substitute.For<ILogger>();
+            var translator = new Translator(Substitute.For<ILogger>(), "", "");
 
             translator.AssemblyInfo = new AssemblyInfo()
             {

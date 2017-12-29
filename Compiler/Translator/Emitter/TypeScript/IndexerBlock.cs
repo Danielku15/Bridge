@@ -31,7 +31,7 @@ namespace Bridge.Translator.TypeScript
         {
             if (!accessor.IsNull && this.Emitter.GetInline(accessor) == null)
             {
-                var memberResult = this.Emitter.Resolver.ResolveNode(this.IndexerDeclaration, this.Emitter) as MemberResolveResult;
+                var memberResult = this.Emitter.Resolver.ResolveNode(this.IndexerDeclaration) as MemberResolveResult;
                 var isInterface = memberResult.Member.DeclaringType.Kind == TypeKind.Interface;
                 var ignoreInterface = isInterface &&
                                       memberResult.Member.DeclaringType.TypeParameterCount > 0;
@@ -57,7 +57,7 @@ namespace Bridge.Translator.TypeScript
             {
                 this.Write(", value");
                 this.WriteColon();
-                name = BridgeTypes.ToTypeScriptName(indexerDeclaration.ReturnType, this.Emitter);
+                name = this.Emitter.ToTypeScriptName(indexerDeclaration.ReturnType);
                 this.Write(name);
                 this.WriteCloseParentheses();
                 this.WriteColon();
@@ -66,7 +66,7 @@ namespace Bridge.Translator.TypeScript
             else
             {
                 this.WriteColon();
-                name = BridgeTypes.ToTypeScriptName(indexerDeclaration.ReturnType, this.Emitter);
+                name = this.Emitter.ToTypeScriptName(indexerDeclaration.ReturnType);
                 this.Write(name);
             }
 
@@ -91,7 +91,7 @@ namespace Bridge.Translator.TypeScript
                 needComma = true;
                 this.Write(name);
                 this.WriteColon();
-                name = BridgeTypes.ToTypeScriptName(p.Type, this.Emitter);
+                name = this.Emitter.ToTypeScriptName(p.Type);
                 this.Write(name);
             }
 

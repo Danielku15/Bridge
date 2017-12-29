@@ -28,7 +28,7 @@ namespace Bridge.Translator
             var first = elements.Count > 0 ? elements.First() : null;
 
             var isObjectInitializer = first is NamedExpression || first is NamedArgumentExpression;
-            var rr = this.Emitter.Resolver.ResolveNode(this.ArrayInitializerExpression, this.Emitter) as ArrayCreateResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(this.ArrayInitializerExpression) as ArrayCreateResolveResult;
             var at = rr != null ? (ArrayType)rr.Type : null;
             var create = at != null && at.Dimensions > 1;
 
@@ -76,7 +76,7 @@ namespace Bridge.Translator
                 if (at != null)
                 {
                     this.Write(", ");
-                    this.Write(BridgeTypes.ToJsName(at.ElementType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(at.ElementType));
 
                     if (create)
                     {

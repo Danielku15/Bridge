@@ -23,7 +23,7 @@ namespace Bridge.Translator
                 throw new EmitterException(methodDeclaration, "[CompilerExtension] methods must have a body");
             }
 
-            var interpreter = new CompilerExtensionInterpreter(this, methodDeclaration.Body);
+            var interpreter = new CompilerExtensionInterpreter(this.Translator.Resolver, methodDeclaration.Body);
             interpreter.Execute();
         }
     }

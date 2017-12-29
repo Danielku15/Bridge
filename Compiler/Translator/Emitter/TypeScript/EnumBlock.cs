@@ -34,7 +34,7 @@ namespace Bridge.Translator.TypeScript
 
             if (name.IsEmpty())
             {
-                name = BridgeTypes.ToTypeScriptName(this.TypeInfo.Type, this.Emitter, false, true);
+                name = this.Emitter.ToTypeScriptName(this.TypeInfo.Type, false, true);
             }
 
             if (this.Namespace != null)
@@ -53,7 +53,6 @@ namespace Bridge.Translator.TypeScript
                 var lastField = this.TypeInfo.StaticConfig.Fields.Last();
                 foreach (var field in this.TypeInfo.StaticConfig.Fields)
                 {
-
                     this.Write(EnumBlock.GetEnumItemName(this.Emitter, field));
 
                     var initializer = field.Initializer;
@@ -85,7 +84,7 @@ namespace Bridge.Translator.TypeScript
 
         public static string GetEnumItemName(IEmitter emitter, TypeConfigItem field)
         {
-            var memeber_rr = (MemberResolveResult)emitter.Resolver.ResolveNode(field.Entity, emitter);
+            var memeber_rr = (MemberResolveResult)emitter.Resolver.ResolveNode(field.Entity);
             var mname = emitter.GetEntityName(memeber_rr.Member);
             return mname;
         }

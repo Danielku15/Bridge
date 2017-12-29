@@ -25,8 +25,8 @@ namespace Bridge.Translator
             {
                 if (item.OutputType == TranslatorOutputType.TypeScript && item.OutputKind == TranslatorOutputKind.Reference)
                 {
-                    string filePath = DefineOutputItemFullPath(item, projectOutputPath, defaultFileName);
-                    string path = "./" + FileHelper.GetRelativePath(filePath, projectOutputPath).Replace(Path.DirectorySeparatorChar, '/');
+                    string filePath = this.DefineOutputItemFullPath(item, projectOutputPath, defaultFileName);
+                    string path = "./" + this.FileHelper.GetRelativePath(filePath, projectOutputPath).Replace(Path.DirectorySeparatorChar, '/');
 
                     if(!dtsReferences.Contains(path))
                     {
@@ -44,7 +44,7 @@ namespace Bridge.Translator
             {
                 logger.Trace("Output " + item.Name);
 
-                string filePath = DefineOutputItemFullPath(item, projectOutputPath, defaultFileName);
+                string filePath = this.DefineOutputItemFullPath(item, projectOutputPath, defaultFileName);
 
                 if (item.IsEmpty && (item.MinifiedVersion == null || item.MinifiedVersion.IsEmpty))
                 {
@@ -52,17 +52,16 @@ namespace Bridge.Translator
                     continue;
                 }
 
-                var file = FileHelper.CreateFileDirectory(filePath);
+                var file = this.FileHelper.CreateFileDirectory(filePath);
                 logger.Trace("Output full name " + file.FullName);
 
-                byte[] buffer = null;
-                string content = null;
+                string content;
 
                 if(item.OutputType == TranslatorOutputType.TypeScript && item.OutputKind == TranslatorOutputKind.ProjectOutput)
                 {
                     content = item.Content.GetContentAsString();
                     StringBuilder sb = new StringBuilder();
-                    var nl = Emitter.NEW_LINE;
+                    var nl = Bridge.Translator.Emitter.NEW_LINE;
 
                     if (addNoLibReference)
                     {
@@ -79,9 +78,9 @@ namespace Bridge.Translator
                         sb.Append(nl);
                     }
 
-                    this.SaveToFile(file.FullName, sb.ToString() + content);
+                    this.SaveToFile(file.FullName, sb + content);
                 }
-                else if (CheckIfRequiresSourceMap(item))
+                else if (this.CheckIfRequiresSourceMap(item))
                 {
                     content = item.Content.GetContentAsString();
                     content = this.GenerateSourceMap(file.FullName, content);
@@ -92,7 +91,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    buffer = item.Content.Buffer;
+                    var buffer = item.Content.Buffer;
 
                     if (buffer != null)
                     {
@@ -125,9 +124,9 @@ namespace Bridge.Translator
 
             var reportContent = this.Outputs.Report.Content.Builder;
 
-            string filePath = DefineOutputItemFullPath(this.Outputs.Report, projectOutputPath, null);
+            string filePath = this.DefineOutputItemFullPath(this.Outputs.Report, projectOutputPath, null);
 
-            var file = FileHelper.CreateFileDirectory(filePath);
+            var file = this.FileHelper.CreateFileDirectory(filePath);
             logger.Trace("Report file full name: " + file.FullName);
 
             this.SaveToFile(file.FullName, reportContent.ToString());
@@ -210,7 +209,7 @@ namespace Bridge.Translator
                 File.WriteAllText(fileName, content, OutputEncoding);
                 this.Log.Trace("Saving content (string) into " + fileName + " ...");
             }
-            else
+            else if(binary != null)
             {
                 File.WriteAllBytes(fileName, binary);
                 this.Log.Trace("Saving binary into " + fileName + " ...");
@@ -229,9 +228,8 @@ namespace Bridge.Translator
                     : this.AssemblyInfo.CleanOutputFolderBeforeBuildPattern;
 
                 string logFileFullPath = null;
-                var l = this.Log as Logger;
 
-                if (l != null)
+                if (this.Log is Logger l)
                 {
                     var fileWriter = l.GetFileLogger();
 
@@ -241,7 +239,7 @@ namespace Bridge.Translator
                     }
                 }
 
-                CleanDirectory(outputPath, searchPattern, logFileFullPath);
+                this.CleanDirectory(outputPath, searchPattern, logFileFullPath);
             }
         }
 
@@ -252,7 +250,7 @@ namespace Bridge.Translator
 
         protected virtual void AddLocaleOutput(EmbeddedResource resource, string outputPath)
         {
-            var fileName = resource.Name.Substring(Translator.LocalesPrefix.Length);
+            var fileName = resource.Name.Substring(LocalesPrefix.Length);
 
             if (!string.IsNullOrWhiteSpace(this.AssemblyInfo.LocalesOutput))
             {
@@ -261,14 +259,14 @@ namespace Bridge.Translator
 
             var content = this.ReadEmbeddedResource(resource);
 
-            Emitter.AddOutputItem(this.Outputs.Locales, fileName, new StringBuilder(content), TranslatorOutputKind.Locale, location: outputPath);
+            Bridge.Translator.Emitter.AddOutputItem(this.Outputs.Locales, fileName, new StringBuilder(content), TranslatorOutputKind.Locale, outputPath);
         }
 
         protected virtual void AddLocaleOutputs(IEnumerable<EmbeddedResource> resources, string outputPath)
         {
             foreach (var resource in resources)
             {
-                AddLocaleOutput(resource, outputPath);
+                this.AddLocaleOutput(resource, outputPath);
             }
         }
 
@@ -276,11 +274,11 @@ namespace Bridge.Translator
         {
             this.Log.Trace("Adding referenced output " + resource.Name);
 
-            var currentAssembly = GetAssemblyNameForResource(assembly);
+            var currentAssembly = this.GetAssemblyNameForResource(assembly);
 
             var combinedResource = (resource.Parts != null && resource.Parts.Length > 0);
 
-            TranslatorOutputItemContent content = null;
+            TranslatorOutputItemContent content;
 
             if (combinedResource)
             {
@@ -301,12 +299,12 @@ namespace Bridge.Translator
 
                     if (part.Assembly != null)
                     {
-                        partAssemblyName = GetAssemblyNameFromResource(part.Assembly);
+                        partAssemblyName = this.GetAssemblyNameFromResource(part.Assembly);
 
                         if (noConsole
-                            && partAssemblyName.Name == Translator.Bridge_ASSEMBLY
-                            && (string.Compare(part.Name, BridgeConsoleName, true) == 0
-                                || string.Compare(part.Name, fileHelper.GetMinifiedJSFileName(BridgeConsoleName), true) == 0)
+                            && partAssemblyName.Name == CS.NS.BRIDGE
+                            && (string.Compare(part.Name, BridgeConsoleName, StringComparison.InvariantCultureIgnoreCase) == 0
+                                || string.Compare(part.Name, fileHelper.GetMinifiedJSFileName(BridgeConsoleName), StringComparison.InvariantCultureIgnoreCase) == 0)
                             )
                         {
                             // Skip Bridge console resource
@@ -316,8 +314,8 @@ namespace Bridge.Translator
                         }
                         else
                         {
-                            var partContentName = GetExtractedResourceName(part.Assembly, part.Name);
-                            needPart = ExtractedScripts.Add(partContentName);
+                            var partContentName = this.GetExtractedResourceName(part.Assembly, part.Name);
+                            needPart = this.ExtractedScripts.Add(partContentName);
 
                             if (!needPart)
                             {
@@ -340,7 +338,7 @@ namespace Bridge.Translator
                         {
                             this.Log.Trace("Using assembly " + assembly.FullName + " to search resource part " + resourcePartName);
 
-                            partContent = ReadEmbeddedResource(assembly, resourcePartName, true, preHandler).Item2;
+                            partContent = this.ReadEmbeddedResource(assembly, resourcePartName, true).Item2;
                         }
                         else
                         {
@@ -368,7 +366,7 @@ namespace Bridge.Translator
 
                             try
                             {
-                                partContent = ReadEmbeddedResource(partAssembly, resourcePartName, true, preHandler).Item2;
+                                partContent = this.ReadEmbeddedResource(partAssembly, resourcePartName, true).Item2;
                                 resourcePartFound = true;
                             }
                             catch (InvalidOperationException)
@@ -380,7 +378,7 @@ namespace Bridge.Translator
                             {
                                 try
                                 {
-                                    partContent = ReadEmbeddedResource(partAssembly, part.Name, true, preHandler).Item2;
+                                    partContent = this.ReadEmbeddedResource(partAssembly, part.Name, true).Item2;
                                     resourcePartFound = true;
                                 }
                                 catch (InvalidOperationException)
@@ -392,9 +390,7 @@ namespace Bridge.Translator
                                 {
                                     if (partAssembly.Name.Version != partAssemblyName.Version)
                                     {
-                                        var partAssemblyExactVersion = this.References
-                                            .Where(x => x.FullName == partAssemblyName.FullName)
-                                            .FirstOrDefault();
+                                        var partAssemblyExactVersion = this.References.FirstOrDefault(x => x.FullName == partAssemblyName.FullName);
 
                                         if (partAssemblyExactVersion != null)
                                         {
@@ -402,7 +398,7 @@ namespace Bridge.Translator
 
                                             try
                                             {
-                                                partContent = ReadEmbeddedResource(partAssemblyExactVersion, resourcePartName, true, preHandler).Item2;
+                                                partContent = this.ReadEmbeddedResource(partAssemblyExactVersion, resourcePartName, true).Item2;
                                                 resourcePartFound = true;
                                             }
                                             catch (InvalidOperationException)
@@ -414,7 +410,7 @@ namespace Bridge.Translator
                                             {
                                                 try
                                                 {
-                                                    partContent = ReadEmbeddedResource(partAssemblyExactVersion, part.Name, true, preHandler).Item2;
+                                                    partContent = this.ReadEmbeddedResource(partAssemblyExactVersion, part.Name, true).Item2;
                                                     resourcePartFound = true;
                                                 }
                                                 catch (InvalidOperationException)
@@ -427,8 +423,7 @@ namespace Bridge.Translator
 
                                     if (!resourcePartFound)
                                     {
-                                        partContent = ReadEmbeddedResource(assembly, resourcePartName, true, preHandler).Item2;
-                                        resourcePartFound = true;
+                                        partContent = this.ReadEmbeddedResource(assembly, resourcePartName, true).Item2;
                                     }
                                 }
                             }
@@ -444,9 +439,9 @@ namespace Bridge.Translator
             }
             else
             {
-                var readAsString = FileHelper.IsJS(fileName) || preHandler != null;
+                var readAsString = this.FileHelper.IsJS(fileName) || preHandler != null;
 
-                var notCombinedResource = ReadEmbeddedResource(assembly, resource.Name, readAsString, preHandler);
+                var notCombinedResource = this.ReadEmbeddedResource(assembly, resource.Name, readAsString);
 
                 if (readAsString)
                 {
@@ -458,12 +453,12 @@ namespace Bridge.Translator
                 }
             }
 
-            ExtractedScripts.Add(GetExtractedResourceName(currentAssembly, resource.Name));
+            this.ExtractedScripts.Add(this.GetExtractedResourceName(currentAssembly, resource.Name));
 
-            Emitter.AddOutputItem(this.Outputs.References, fileName, content, TranslatorOutputKind.Reference, location: outputPath, assembly: currentAssembly);
+            Bridge.Translator.Emitter.AddOutputItem(this.Outputs.References, fileName, content, TranslatorOutputKind.Reference, outputPath, currentAssembly);
         }
 
-        private Tuple<byte[], string> ReadEmbeddedResource(AssemblyDefinition assembly, string resourceName, bool readAsString, Func<string, string> preHandler = null)
+        private Tuple<byte[], string> ReadEmbeddedResource(AssemblyDefinition assembly, string resourceName, bool readAsString)
         {
             var res = assembly.MainModule.Resources.FirstOrDefault(r => r.Name == resourceName);
 
@@ -484,7 +479,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var binary = ReadStream(resourcesStream);
+                    var binary = this.ReadStream(resourcesStream);
                     return Tuple.Create(binary, (string)null);
                 }
             }
@@ -492,27 +487,27 @@ namespace Bridge.Translator
 
         protected virtual void AddExtractedResourceOutput(ResourceConfigItem resource, byte[] code)
         {
-            Emitter.AddOutputItem(this.Outputs.Resources, resource.Name, code, TranslatorOutputKind.Resource, location: resource.Output);
+            Bridge.Translator.Emitter.AddOutputItem(this.Outputs.Resources, resource.Name, code, TranslatorOutputKind.Resource, resource.Output);
         }
 
         public void ExtractCore(string outputPath, string projectPath)
         {
             this.Log.Info("Extracting core scripts...");
 
-            ExtractResources(outputPath, projectPath);
+            this.ExtractResources(outputPath);
 
-            ExtractLocales(outputPath);
+            this.ExtractLocales(outputPath);
 
             this.Log.Info("Done extracting core scripts");
         }
 
-        private void ExtractResources(string outputPath, string projectPath)
+        private void ExtractResources(string outputPath)
         {
             this.Log.Info("Extracting resources...");
 
             foreach (var reference in this.References)
             {
-                var resources = GetEmbeddedResourceList(reference);
+                var resources = this.GetEmbeddedResourceList(reference);
 
                 if (!resources.Any())
                 {
@@ -547,11 +542,8 @@ namespace Bridge.Translator
                     string resourceOutputFileName = null;
 
                     var resourceExtractItems = resourceOption.ExtractItems
-                        .Where(
-                            x => string.Compare(x.Name, resName, StringComparison.InvariantCultureIgnoreCase) == 0
-                            && (x.Assembly == null
-                                || string.Compare(x.Assembly, reference.Name.Name, StringComparison.InvariantCultureIgnoreCase) == 0))
-                        .FirstOrDefault();
+                        .FirstOrDefault(x => string.Compare(x.Name, resName, StringComparison.InvariantCultureIgnoreCase) == 0
+                            && (x.Assembly == null || string.Compare(x.Assembly, reference.Name.Name, StringComparison.InvariantCultureIgnoreCase) == 0));
 
                     if (resourceExtractItems != null)
                     {
@@ -622,7 +614,7 @@ namespace Bridge.Translator
                         resourceOutputFileName = fileName;
                     }
 
-                    bool isTs = FileHelper.IsDTS(resName);
+                    bool isTs = this.FileHelper.IsDTS(resName);
 
                     if (!isTs || this.AssemblyInfo.GenerateTypeScript)
                     {
@@ -644,8 +636,10 @@ namespace Bridge.Translator
 
             this.Log.Info("Extracting Locales...");
 
-            var bridgeAssembly = this.References.FirstOrDefault(r => r.Name.Name == CS.NS.BRIDGE);
-            var localesResources = bridgeAssembly.MainModule.Resources.Where(r => r.Name.StartsWith(Translator.LocalesPrefix)).Cast<EmbeddedResource>();
+            var bridgeAssembly = this.References.First(r => r.Name.Name == CS.NS.BRIDGE);
+            var localesResources = bridgeAssembly.MainModule.Resources
+                .Where(r => r.Name.StartsWith(LocalesPrefix)).Cast<EmbeddedResource>()
+                .ToArray();
             var locales = this.AssemblyInfo.Locales.Split(';');
 
             if (locales.Any(x => x == "all"))
@@ -658,14 +652,14 @@ namespace Bridge.Translator
                 {
                     if (locale.Contains("*"))
                     {
-                        var name = Translator.LocalesPrefix + locale.SubstringUpToFirst('*');
+                        var name = LocalesPrefix + locale.SubstringUpToFirst('*');
                         var maskedResources = localesResources.Where(r => r.Name.StartsWith(name));
 
                         this.AddLocaleOutputs(maskedResources, outputPath);
                     }
                     else
                     {
-                        var name = Translator.LocalesPrefix + locale + Files.Extensions.JS;
+                        var name = LocalesPrefix + locale + Files.Extensions.JS;
                         var maskedResource = localesResources.First(r => r.Name == name);
 
                         this.AddLocaleOutput(maskedResource, outputPath);
@@ -673,49 +667,13 @@ namespace Bridge.Translator
                 }
             }
 
-            //if ((bufferjs != null && bufferjs.Length > 0) || (bufferjsmin != null && bufferjsmin.Length > 0))
-            //{
-            //    if (!string.IsNullOrWhiteSpace(this.AssemblyInfo.LocalesOutput))
-            //    {
-            //        outputPath = Path.Combine(outputPath, this.AssemblyInfo.LocalesOutput);
-            //    }
-
-            //    var defaultFileName = this.AssemblyInfo.LocalesFileName ?? "Bridge.Locales.js";
-            //    var fileName = defaultFileName.Replace(":", "_");
-            //    var oldFNlen = fileName.Length;
-            //    while (Path.IsPathRooted(fileName))
-            //    {
-            //        fileName = fileName.TrimStart(Path.DirectorySeparatorChar, '/', '\\');
-            //        if (fileName.Length == oldFNlen)
-            //        {
-            //            break;
-            //        }
-            //        oldFNlen = fileName.Length;
-            //    }
-
-            //    var file = CreateFileDirectory(outputPath, fileName);
-
-            //    if (bufferjs != null && bufferjs.Length > 0)
-            //    {
-            //        File.WriteAllText(file.FullName, bufferjs.ToString(), OutputEncoding);
-            //        this.AddOutputItem(this.OutputItems.Locales, file.Name, Path.GetDirectoryName(file.FullName));
-            //    }
-
-            //    if (bufferjsmin != null && bufferjsmin.Length > 0)
-            //    {
-            //        var minifiedName = FileHelper.GetMinifiedJSFileName(file.FullName);
-            //        File.WriteAllText(minifiedName, bufferjsmin.ToString(), OutputEncoding);
-            //        this.AddOutputItem(this.OutputItems.Locales, minifiedName, Path.GetDirectoryName(file.FullName));
-            //    }
-            //}
-
             this.Log.Info("Done extracting Locales");
         }
 
         internal void Combine(string fileName)
         {
-            CombineLocales();
-            CombineProjectOutput(fileName);
+            this.CombineLocales();
+            this.CombineProjectOutput(fileName);
         }
 
         private void CombineLocales()
@@ -728,9 +686,9 @@ namespace Bridge.Translator
                 return;
             }
 
-            var fileName = this.AssemblyInfo.LocalesFileName ?? Translator.DefaultLocalesOutputName;
+            var fileName = this.AssemblyInfo.LocalesFileName ?? DefaultLocalesOutputName;
 
-            var combinedLocales = Combine(null, this.Outputs.Locales, fileName, "locales", TranslatorOutputKind.Locale);
+            var combinedLocales = this.Combine(null, this.Outputs.Locales, fileName, "locales", TranslatorOutputKind.Locale);
 
             if (combinedLocales != null && !string.IsNullOrWhiteSpace(this.AssemblyInfo.LocalesOutput))
             {
@@ -763,10 +721,10 @@ namespace Bridge.Translator
 
             foreach (var referenceOutput in this.Outputs.References)
             {
-                ConvertOutputItemIntoResourceInfoPart(combinedResourcePartsNonMinified, combinedResourcePartsMinified, referenceOutput);
+                this.ConvertOutputItemIntoResourceInfoPart(combinedResourcePartsNonMinified, combinedResourcePartsMinified, referenceOutput);
             }
 
-            var combinedOutput = Combine(null, this.Outputs.References, fileName, "project references", TranslatorOutputKind.ProjectOutput);
+            var combinedOutput = this.Combine(null, this.Outputs.References, fileName, "project references", TranslatorOutputKind.ProjectOutput);
 
             if (combinedOutput?.Content?.Builder != null)
             {
@@ -788,9 +746,9 @@ namespace Bridge.Translator
                     needNewLine = false;
                 }
 
-                ConvertOutputItemIntoResourceInfoPart(combinedResourcePartsNonMinified, combinedResourcePartsMinified, this.Outputs.CombinedLocales);
+                this.ConvertOutputItemIntoResourceInfoPart(combinedResourcePartsNonMinified, combinedResourcePartsMinified, this.Outputs.CombinedLocales);
 
-                combinedOutput = Combine(combinedOutput, new List<TranslatorOutputItem> { this.Outputs.CombinedLocales }, fileName, "combined locales output", TranslatorOutputKind.ProjectOutput);
+                combinedOutput = this.Combine(combinedOutput, new List<TranslatorOutputItem> { this.Outputs.CombinedLocales }, fileName, "combined locales output", TranslatorOutputKind.ProjectOutput);
 
                 this.Outputs.CombinedLocales = null;
 
@@ -802,20 +760,17 @@ namespace Bridge.Translator
                     {
                         needNewLine = true;
                     }
-
-                    bufferLength = buffer.Length;
                 }
             }
 
             if (needNewLine)
             {
                 NewLine(buffer);
-                needNewLine = false;
             }
 
-            var combinedMainOutput = Combine(null, this.Outputs.Main, fileName, "project main output", TranslatorOutputKind.ProjectOutput);
+            var combinedMainOutput = this.Combine(null, this.Outputs.Main, fileName, "project main output", TranslatorOutputKind.ProjectOutput);
 
-            ConvertOutputItemIntoResourceInfoPart(combinedResourcePartsNonMinified, combinedResourcePartsMinified, combinedMainOutput);
+            this.ConvertOutputItemIntoResourceInfoPart(combinedResourcePartsNonMinified, combinedResourcePartsMinified, combinedMainOutput);
 
             if (combinedOutput == null)
             {
@@ -825,7 +780,7 @@ namespace Bridge.Translator
             {
                 if (combinedMainOutput?.Content?.Builder != null)
                 {
-                    if (combinedOutput?.Content?.Builder != null)
+                    if (combinedOutput.Content?.Builder != null)
                     {
                         combinedOutput.Content.Builder.Append(combinedMainOutput.Content.GetContentAsString());
                     }
@@ -837,7 +792,7 @@ namespace Bridge.Translator
 
                 if (combinedMainOutput?.MinifiedVersion?.Content?.Builder != null)
                 {
-                    if (combinedOutput?.MinifiedVersion?.Content?.Builder != null)
+                    if (combinedOutput.MinifiedVersion?.Content?.Builder != null)
                     {
                         combinedOutput.MinifiedVersion.Content.Builder.Append(combinedMainOutput.MinifiedVersion.Content.GetContentAsString());
                     }
@@ -924,7 +879,7 @@ namespace Bridge.Translator
 
             if (this.AssemblyInfo.OutputFormatting != JavaScriptOutputType.Formatted)
             {
-                minifiedBuffer = (target != null && target.MinifiedVersion != null)
+                minifiedBuffer = (target?.MinifiedVersion != null)
                                     ? target.MinifiedVersion.Content.Builder
                                     : new StringBuilder();
             }
@@ -933,7 +888,7 @@ namespace Bridge.Translator
 
             foreach (var output in outputs)
             {
-                if (filter != null && !filter.Contains(output.OutputType))
+                if (!filter.Contains(output.OutputType))
                 {
                     continue;
                 }
@@ -967,7 +922,6 @@ namespace Bridge.Translator
                 {
                     if (!firstLine)
                     {
-                        firstLine = false;
                         NewLine(buffer);
                     }
 
@@ -1029,7 +983,7 @@ namespace Bridge.Translator
                 this.Log.Trace("Adjusted fileName: " + fileName);
             }
 
-            var checkExtentionFileName = FileHelper.CheckFileNameAndOutputType(fileName, TranslatorOutputType.JavaScript);
+            var checkExtentionFileName = this.FileHelper.CheckFileNameAndOutputType(fileName, TranslatorOutputType.JavaScript);
 
             if (checkExtentionFileName != null)
             {
@@ -1047,7 +1001,7 @@ namespace Bridge.Translator
 
             if (minifiedBuffer != null)
             {
-                var minifiedName = FileHelper.GetMinifiedJSFileName(r.Name);
+                var minifiedName = this.FileHelper.GetMinifiedJSFileName(r.Name);
 
                 r.MinifiedVersion = new TranslatorOutputItem
                 {
@@ -1073,9 +1027,9 @@ namespace Bridge.Translator
                 return;
             }
 
-            Minify(this.Outputs.References, GetMinifierSettings);
-            Minify(this.Outputs.Locales, (s) => MinifierCodeSettingsLocales);
-            Minify(this.Outputs.Main, GetMinifierSettings);
+            this.Minify(this.Outputs.References, this.GetMinifierSettings);
+            this.Minify(this.Outputs.Locales, (s) => MinifierCodeSettingsLocales);
+            this.Minify(this.Outputs.Main, this.GetMinifierSettings);
 
             this.Log.Trace("Minification done");
         }
@@ -1089,18 +1043,11 @@ namespace Bridge.Translator
 
             foreach (var output in outputs)
             {
-                CodeSettings settings;
+                var settings = minifierSettingsResolver != null
+                    ? minifierSettingsResolver(output.Name)
+                    : MinifierCodeSettingsSafe;
 
-                if (minifierSettingsResolver != null)
-                {
-                    settings = minifierSettingsResolver(output.Name);
-                }
-                else
-                {
-                    settings = Translator.MinifierCodeSettingsSafe;
-                }
-
-                Minify(output, settings);
+                this.Minify(output, settings);
             }
         }
 
@@ -1125,7 +1072,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var minifiedName = FileHelper.GetMinifiedJSFileName(output.Name);
+            var minifiedName = this.FileHelper.GetMinifiedJSFileName(output.Name);
 
             var minifiedContent = this.Minify(new Minifier(), formatted, minifierSettings);
 
@@ -1209,9 +1156,8 @@ namespace Bridge.Translator
                     return;
                 }
 
-                var patterns = searchPattern.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (patterns.Length == 0)
+                var patterns = searchPattern?.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                if (patterns == null || patterns.Length == 0)
                 {
                     this.Log.Warn("Incorrect search pattern - empty. No files deleted.");
                     return;
@@ -1239,7 +1185,7 @@ namespace Bridge.Translator
                     }
                 }
 
-                if (systemFilesToIgnore != null && systemFilesToIgnore.All(x => string.IsNullOrEmpty(x)))
+                if (systemFilesToIgnore != null && systemFilesToIgnore.All(string.IsNullOrEmpty))
                 {
                     systemFilesToIgnore = null;
                 }
@@ -1266,7 +1212,7 @@ namespace Bridge.Translator
 
                 this.Log.Info("Cleaning output folder done");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 this.Log.Error(ex.ToString());
             }

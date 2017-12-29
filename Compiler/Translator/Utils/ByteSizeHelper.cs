@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Bridge.Translator.Utils
 {
@@ -98,7 +94,7 @@ namespace Bridge.Translator.Utils
 
             if (format == null)
             {
-                return string.Format("{0} {1}", n, s);
+                return $"{n} {s}";
             }
 
             return ToSizeInBytesFormatted(format, n, s, bits, bytes, kilobytes, megabytes, gigabytes, terabytes, invariantCulture);
@@ -157,7 +153,7 @@ namespace Bridge.Translator.Utils
                                               ? "0"
                                               : formattedLargeWholeNumberValue;
 
-            return string.Format("{0} {1}", formattedLargeWholeNumberValue, largestSymbol);
+            return $"{formattedLargeWholeNumberValue} {largestSymbol}";
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Bridge.Translator
 
         protected override void DoEmit()
         {
-            var resolveResult = this.Emitter.Resolver.ResolveNode(this.DefaultValueExpression.Type, this.Emitter);
+            var resolveResult = this.Emitter.Resolver.ResolveNode(this.DefaultValueExpression.Type);
             var value = DefaultValueBlock.DefaultValue(resolveResult, this.Emitter, DefaultValueExpression.Type);
             this.Write(value);
         }
@@ -43,7 +43,7 @@ namespace Bridge.Translator
                 return isString ? "null" : "0";
             }
 
-            return JS.Funcs.BRIDGE_GETDEFAULTVALUE + "(" + (astType != null ? BridgeTypes.ToJsName(astType, emitter) : BridgeTypes.ToJsName(resolveResult.Type, emitter)) + ")";
+            return JS.Funcs.BRIDGE_GETDEFAULTVALUE + "(" + (astType != null ? emitter.ToJsName(astType) : emitter.ToJsName(resolveResult.Type)) + ")";
         }
     }
 }

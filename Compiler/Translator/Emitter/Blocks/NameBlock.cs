@@ -51,7 +51,7 @@ namespace Bridge.Translator
 
         protected virtual void EmitNameExpression(string name, Expression namedExpression, Expression expression)
         {
-            var resolveResult = this.Emitter.Resolver.ResolveNode(namedExpression, this.Emitter);
+            var resolveResult = this.Emitter.Resolver.ResolveNode(namedExpression);
 
             if (resolveResult is MemberResolveResult)
             {

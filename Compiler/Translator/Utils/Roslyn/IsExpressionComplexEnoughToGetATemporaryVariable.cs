@@ -8,7 +8,7 @@ namespace Bridge.Translator
     {
         private class Analyzer : CSharpSyntaxWalker
         {
-            private SemanticModel _semanticModel;
+            private readonly SemanticModel _semanticModel;
 
             public bool IsComplex
             {
@@ -18,87 +18,87 @@ namespace Bridge.Translator
 
             public Analyzer(SemanticModel semanticModel)
             {
-                _semanticModel = semanticModel;
+                this._semanticModel = semanticModel;
             }
 
             public void Analyze(SyntaxNode node)
             {
-                Visit(node);
+                this.Visit(node);
             }
 
             public override void VisitArrayCreationExpression(ArrayCreationExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitArrayCreationExpression(node);
             }
 
             public override void VisitImplicitArrayCreationExpression(ImplicitArrayCreationExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitImplicitArrayCreationExpression(node);
             }
 
             public override void VisitBinaryExpression(BinaryExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitBinaryExpression(node);
             }
 
             public override void VisitInvocationExpression(InvocationExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitInvocationExpression(node);
             }
 
             public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitObjectCreationExpression(node);
             }
 
             public override void VisitAnonymousObjectCreationExpression(AnonymousObjectCreationExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitAnonymousObjectCreationExpression(node);
             }
 
             public override void VisitPostfixUnaryExpression(PostfixUnaryExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitPostfixUnaryExpression(node);
             }
 
             public override void VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitPrefixUnaryExpression(node);
             }
 
             public override void VisitConditionalExpression(ConditionalExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitConditionalExpression(node);
             }
 
             public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitConditionalAccessExpression(node);
             }
 
             public override void VisitAnonymousMethodExpression(AnonymousMethodExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitAnonymousMethodExpression(node);
             }
 
             public override void VisitIdentifierName(IdentifierNameSyntax node)
             {
-                var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+                var symbol = this._semanticModel.GetSymbolInfo(node).Symbol;
 
                 if (symbol is IPropertySymbol)
                 {
-                    IsComplex = true;
+                    this.IsComplex = true;
                 }
 
                 base.VisitIdentifierName(node);
@@ -106,11 +106,11 @@ namespace Bridge.Translator
 
             public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
             {
-                var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+                var symbol = this._semanticModel.GetSymbolInfo(node).Symbol;
 
                 if (symbol is IPropertySymbol)
                 {
-                    IsComplex = true;
+                    this.IsComplex = true;
                 }
 
                 base.VisitMemberAccessExpression(node);
@@ -118,19 +118,19 @@ namespace Bridge.Translator
 
             public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitElementAccessExpression(node);
             }
 
             public override void VisitCastExpression(CastExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitCastExpression(node);
             }
 
             public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
             {
-                IsComplex = true;
+                this.IsComplex = true;
                 base.VisitAssignmentExpression(node);
             }
         }

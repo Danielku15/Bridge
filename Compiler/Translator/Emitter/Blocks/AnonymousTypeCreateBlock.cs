@@ -37,7 +37,7 @@ namespace Bridge.Translator
             }
             else
             {
-                var rr = this.Emitter.Resolver.ResolveNode(this.AnonymousTypeCreateExpression.Parent, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(this.AnonymousTypeCreateExpression.Parent);
                 var member_rr = rr as MemberResolveResult;
 
                 if (member_rr == null)
@@ -84,7 +84,7 @@ namespace Bridge.Translator
         protected void VisitAnonymousTypeCreateExpression()
         {
             AnonymousTypeCreateExpression anonymousTypeCreateExpression = this.AnonymousTypeCreateExpression;
-            var invocationrr = this.Emitter.Resolver.ResolveNode(anonymousTypeCreateExpression, this.Emitter) as InvocationResolveResult;
+            var invocationrr = this.Emitter.Resolver.ResolveNode(anonymousTypeCreateExpression) as InvocationResolveResult;
             var type = invocationrr.Type as AnonymousType;
             IAnonymousTypeConfig config = null;
 

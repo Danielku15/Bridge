@@ -2,6 +2,7 @@ using Bridge.Contract;
 using ICSharpCode.NRefactory.CSharp;
 using Mono.Cecil;
 using System.Collections.Generic;
+using ICSharpCode.NRefactory.TypeSystem;
 
 namespace Bridge.Translator
 {
@@ -19,7 +20,7 @@ namespace Bridge.Translator
             set;
         }
 
-        public ILogger Log
+        public virtual IEnumerable<AssemblyDefinition> References
         {
             get;
             set;
@@ -61,19 +62,10 @@ namespace Bridge.Translator
             set;
         }
 
-        private string msbuildVersion = "4.0.30319";
-
         public string MSBuildVersion
         {
-            get
-            {
-                return this.msbuildVersion;
-            }
-            set
-            {
-                this.msbuildVersion = value;
-            }
-        }
+            get; set;
+        } = "4.0.30319";
 
         public IList<string> SourceFiles
         {
@@ -87,42 +79,15 @@ namespace Bridge.Translator
             protected set;
         }
 
-        private bool rebuild = true;
-
         public bool Rebuild
         {
-            get
-            {
-                return this.rebuild;
-            }
-            set
-            {
-                this.rebuild = value;
-            }
-        }
-
-        public Dictionary<string, ITypeInfo> TypeInfoDefinitions
-        {
-            get;
-            set;
-        }
-
-        public List<ITypeInfo> Types
-        {
-            get;
-            protected set;
-        }
+            get; set;
+        } = true;
 
         public TranslatorOutput Outputs
         {
             get;
             protected set;
-        }
-
-        public IEmitterOutputs EmitterOutputs
-        {
-            get;
-            set;
         }
 
         public IPlugins Plugins
@@ -131,7 +96,7 @@ namespace Bridge.Translator
             set;
         }
 
-        public BridgeTypes BridgeTypes
+        public ITypeInfoCollection Types
         {
             get;
             set;
@@ -167,15 +132,6 @@ namespace Bridge.Translator
             set;
         }
 
-        public virtual IEnumerable<AssemblyDefinition> References
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Indicates whether strict mode will be added to generated script files
-        /// </summary>
         public bool NoStrictMode
         {
             get;
@@ -198,5 +154,18 @@ namespace Bridge.Translator
         {
             get; set;
         } = new HashSet<string>();
+
+        public IEmitter Emitter
+        {
+            get;
+            private set;
+        }
+
+        public IMemberResolver Resolver
+        {
+            get;
+            private set;
+        }
+
     }
 }

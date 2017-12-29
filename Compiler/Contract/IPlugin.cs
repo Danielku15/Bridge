@@ -16,18 +16,18 @@ namespace Bridge.Contract
 
         void OnConfigRead(IAssemblyInfo config);
 
-        void BeforeEmit(IEmitter emitter, ITranslator translator);
+        void BeforeEmit(ITranslator translator);
 
-        void AfterEmit(IEmitter emitter, ITranslator translator);
+        void AfterEmit(ITranslator translator);
 
         void AfterOutput(ITranslator translator, string outputPath, bool nocore);
 
-        void BeforeTypesEmit(IEmitter emitter, IList<ITypeInfo> types);
+        void BeforeTypesEmit(ITranslator translator, IEnumerable<ITypeInfo> types);
 
-        void AfterTypesEmit(IEmitter emitter, IList<ITypeInfo> types);
+        void AfterTypesEmit(ITranslator translator, IEnumerable<ITypeInfo> types);
 
-        void BeforeTypeEmit(IEmitter emitter, ITypeInfo type);
+        void BeforeTypeEmit(ITranslator translator, ITypeInfo type);
 
-        void AfterTypeEmit(IEmitter emitter, ITypeInfo type);
+        void AfterTypeEmit(ITranslator translator, ITypeInfo type);
     }
 }

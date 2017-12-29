@@ -28,7 +28,7 @@ namespace Bridge.Translator
             base.BeginEmit();
             this.OldRules = this.Emitter.Rules;
 
-            var rr = this.Emitter.Resolver.ResolveNode(this.CustomEventDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(this.CustomEventDeclaration) as MemberResolveResult;
 
             if (rr != null)
             {
@@ -55,12 +55,12 @@ namespace Bridge.Translator
 
                 this.AddLocals(new ParameterDeclaration[] { new ParameterDeclaration { Name = "value" } }, accessor.Body);
                 XmlToJsDoc.EmitComment(this, this.CustomEventDeclaration);
-                var member_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(customEventDeclaration, this.Emitter);
+                var member_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(customEventDeclaration);
 
                 this.Write(Helpers.GetEventRef(customEventDeclaration, this.Emitter, remover, false, false, OverloadsCollection.ExcludeTypeParameterForDefinition(member_rr)));
                 this.WriteColon();
                 this.WriteFunction();
-                var m_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(customEventDeclaration, this.Emitter);
+                var m_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(customEventDeclaration);
                 var nm = Helpers.GetFunctionName(this.Emitter.AssemblyInfo.NamedFunctions, m_rr.Member, this.Emitter, remover);
                 if (nm != null)
                 {

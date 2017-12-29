@@ -47,7 +47,7 @@ namespace Bridge.Translator
                 string name = null;
                 Expression expression;
 
-                var rr = this.Emitter.Resolver.ResolveNode(item, this.Emitter) as MemberResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(item) as MemberResolveResult;
 
                 if (rr != null)
                 {

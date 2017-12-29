@@ -64,7 +64,7 @@ namespace Bridge.Translator
 
             IndexerExpression indexerExpression = this.IndexerExpression;
             int pos = this.Emitter.Output.Length;
-            var resolveResult = this.Emitter.Resolver.ResolveNode(indexerExpression, this.Emitter);
+            var resolveResult = this.Emitter.Resolver.ResolveNode(indexerExpression);
             var memberResolveResult = resolveResult as MemberResolveResult;
 
             var arrayAccess = resolveResult as ArrayAccessResolveResult;
@@ -122,7 +122,7 @@ namespace Bridge.Translator
             }
 
             var itypeDef = resolveResult.Member.DeclaringTypeDefinition;
-            var externalInterface = itypeDef.IsExternalInterface();
+            var externalInterface = itypeDef.GetExternalInterface();
             bool variance = MetadataUtils.IsJsGeneric(itypeDef, this.Emitter) &&
                 itypeDef.TypeParameters != null &&
                 itypeDef.TypeParameters.Any(typeParameter => typeParameter.Variance != VarianceModifier.Invariant);
@@ -211,7 +211,7 @@ namespace Bridge.Translator
             var oldIsAssignment = this.Emitter.IsAssignment;
             var oldUnary = this.Emitter.IsUnaryAccessor;
             var inlineCode = current.InlineCode;
-            var rr = this.Emitter.Resolver.ResolveNode(indexerExpression, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(indexerExpression) as MemberResolveResult;
             if (rr != null)
             {
                 inlineCode = Helpers.ConvertTokens(this.Emitter, inlineCode, rr.Member);
@@ -325,7 +325,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var ei = memberResolveResult.Member.DeclaringTypeDefinition.IsExternalInterface();
+                    var ei = memberResolveResult.Member.DeclaringTypeDefinition.GetExternalInterface();
 
                     if (ei != null)
                     {
@@ -370,7 +370,7 @@ namespace Bridge.Translator
                 }
             }
 
-            var targetrr = this.Emitter.Resolver.ResolveNode(indexerExpression.Target, this.Emitter);
+            var targetrr = this.Emitter.Resolver.ResolveNode(indexerExpression.Target);
             var memberTargetrr = targetrr as MemberResolveResult;
             bool isField = memberTargetrr != null && memberTargetrr.Member is IField &&
                            (memberTargetrr.TargetResult is ThisResolveResult ||
@@ -885,7 +885,7 @@ namespace Bridge.Translator
             bool writeTargetVar = false;
             bool isStatement = false;
             string valueVar = null;
-            var resolveResult = this.Emitter.Resolver.ResolveNode(indexerExpression, this.Emitter);
+            var resolveResult = this.Emitter.Resolver.ResolveNode(indexerExpression);
 
             if (this.Emitter.IsAssignment && this.Emitter.AssignmentType != AssignmentOperatorType.Assign)
             {
@@ -910,7 +910,7 @@ namespace Bridge.Translator
 
             if (writeTargetVar)
             {
-                var targetrr = this.Emitter.Resolver.ResolveNode(indexerExpression.Target, this.Emitter);
+                var targetrr = this.Emitter.Resolver.ResolveNode(indexerExpression.Target);
                 var memberTargetrr = targetrr as MemberResolveResult;
                 bool isField = memberTargetrr != null && memberTargetrr.Member is IField && (memberTargetrr.TargetResult is ThisResolveResult || memberTargetrr.TargetResult is LocalResolveResult);
 
@@ -1326,7 +1326,7 @@ namespace Bridge.Translator
             this.Emitter.IsAssignment = false;
             this.Emitter.IsUnaryAccessor = false;
 
-            var targetrr = this.Emitter.Resolver.ResolveNode(indexerExpression.Target, this.Emitter);
+            var targetrr = this.Emitter.Resolver.ResolveNode(indexerExpression.Target);
             var memberTargetrr = targetrr as MemberResolveResult;
             bool isField = memberTargetrr != null && memberTargetrr.Member is IField &&
                            (memberTargetrr.TargetResult is ThisResolveResult ||

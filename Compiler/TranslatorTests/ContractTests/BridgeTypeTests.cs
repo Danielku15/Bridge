@@ -27,7 +27,8 @@ namespace Bridge.Translator.Tests
                 currentTypeInfo.Key = "Type1";
                 currentTypeInfo.Module = new Module("Module1");
 
-                var type = Substitute.For<BridgeType>("Type2");
+                var type = Substitute.For<ITypeInfo>();
+                type.Key.Returns("Type2");
 
                 var moduleName = "Module2";
                 var moduleType = ModuleType.ES6;
@@ -41,7 +42,7 @@ namespace Bridge.Translator.Tests
 
                 emitter.CurrentDependencies.Add(moduleDependency);
 
-                BridgeTypes.EnsureDependencies(type, emitter, currentTypeInfo, module);
+                emitter.EnsureDependencies(type, currentTypeInfo, module);
 
                 Assert.AreEqual(1, emitter.CurrentDependencies.Count, "Did not add ModuleDependency");
 
@@ -63,13 +64,14 @@ namespace Bridge.Translator.Tests
                 currentTypeInfo.Key = "Type1";
                 currentTypeInfo.Module = new Module("Module1");
 
-                var type = Substitute.For<BridgeType>("Type2");
+                var type = Substitute.For<ITypeInfo>();
+                type.Key.Returns("Type2");
 
                 var moduleName = "Module2";
                 var moduleType = ModuleType.ES6;
                 var module = new Module(moduleName, moduleType);
 
-                BridgeTypes.EnsureDependencies(type, emitter, currentTypeInfo, module);
+                emitter.EnsureDependencies(type, currentTypeInfo, module);
 
                 Assert.AreEqual(1, emitter.CurrentDependencies.Count, "Added ModuleDependency");
 

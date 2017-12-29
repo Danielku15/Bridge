@@ -13,15 +13,11 @@ namespace Bridge.Translator.Tests.Helpers
 {
     class EmitterHelper
     {
-        public static IEmitter GetEmitter(BridgeTypes bridgeTypes = null, IAssemblyInfo assemblyInfo = null)
+        public static Emitter GetEmitter(BridgeTypes bridgeTypes = null, IAssemblyInfo assemblyInfo = null)
         {
-            var emitter = Substitute.For<IEmitter>();
-
-            emitter.Log = Substitute.For<ILogger>();
-
-            emitter.AssemblyInfo = assemblyInfo;
-
-            emitter.BridgeTypes = bridgeTypes;
+            var translator = Substitute.For<ITranslator>();
+            translator.AssemblyInfo.Returns(assemblyInfo);
+            var emitter = new Emitter(translator);
 
             emitter.DisableDependencyTracking = false;
 

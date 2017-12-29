@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Bridge.Contract
 {
-    public interface IEmitter : ILog, IAstVisitor
+    public interface IEmitter : IAstVisitor
     {
         string Tag
         {
@@ -16,7 +16,6 @@ namespace Bridge.Contract
         IAssemblyInfo AssemblyInfo
         {
             get;
-            set;
         }
 
         AssignmentOperatorType AssignmentType
@@ -67,12 +66,6 @@ namespace Bridge.Contract
             set;
         }
 
-        int CompareTypeInfosByName(ITypeInfo x, ITypeInfo y);
-
-        int CompareTypeInfosByPriority(ITypeInfo x, ITypeInfo y);
-
-        void SortTypesByInheritance();
-
         List<IPluginDependency> CurrentDependencies
         {
             get;
@@ -112,11 +105,7 @@ namespace Bridge.Contract
 
         ITypeDefinition GetTypeDefinition();
 
-        ITypeDefinition GetTypeDefinition(AstType reference, bool safe = false);
-
-        ITypeDefinition GetTypeDefinition(IType type);
-
-        string GetTypeHierarchy();
+        ITypeDefinition GetTypeDefinition(AstType reference);
 
         AstNode IgnoreBlock
         {
@@ -213,19 +202,6 @@ namespace Bridge.Contract
         ILogger Log
         {
             get;
-            set;
-        }
-
-        IEnumerable<IMethod> MethodsGroup
-        {
-            get;
-            set;
-        }
-
-        Dictionary<int, System.Text.StringBuilder> MethodsGroupBuilder
-        {
-            get;
-            set;
         }
 
         AstNode NoBraceBlock
@@ -285,16 +261,9 @@ namespace Bridge.Contract
         IMemberResolver Resolver
         {
             get;
-            set;
         }
 
         bool SkipSemiColon
-        {
-            get;
-            set;
-        }
-
-        IList<string> SourceFiles
         {
             get;
             set;
@@ -306,21 +275,7 @@ namespace Bridge.Contract
             set;
         }
 
-        string ToJavaScript(object value);
-
         ITypeInfo TypeInfo
-        {
-            get;
-            set;
-        }
-
-        Dictionary<string, ITypeInfo> TypeInfoDefinitions
-        {
-            get;
-            set;
-        }
-
-        List<ITypeInfo> Types
         {
             get;
             set;
@@ -332,15 +287,7 @@ namespace Bridge.Contract
             set;
         }
 
-        IVisitorException CreateException(AstNode node);
-
-        IVisitorException CreateException(AstNode node, string message);
-
-        IPlugins Plugins
-        {
-            get;
-            set;
-        }
+        void Throw(AstNode node, string message = null);
 
         EmitterCache Cache
         {
@@ -364,12 +311,6 @@ namespace Bridge.Contract
         }
 
         Dictionary<string, bool> ParentTempVariables
-        {
-            get;
-            set;
-        }
-
-        BridgeTypes BridgeTypes
         {
             get;
             set;
@@ -457,7 +398,7 @@ namespace Bridge.Contract
             get; set;
         }
 
-        IType[] ReflectableTypes
+        ITypeInfo[] ReflectableTypes
         {
             get; set;
         }
@@ -470,7 +411,6 @@ namespace Bridge.Contract
         bool DisableDependencyTracking { get; set; }
 
         void WriteIndented(string s, int? position = null);
-        string GetReflectionName(IType type);
         bool ForbidLifting { get; set; }
 
         Dictionary<IAssembly, NameRule[]> AssemblyNameRuleCache
@@ -495,5 +435,25 @@ namespace Bridge.Contract
 
         bool InConstructor { get; set; }
         CompilerRule Rules { get; set; }
+
+        string ToJsName(AstType type, bool asDefinition = false, bool excludens = false,
+            bool isAlias = false, bool skipMethodTypeParam = false, bool removeScope = true, bool nomodule = false,
+            bool ignoreLiteralName = true, bool ignoreVirtual = false);
+
+        string ToJsName(IType type, bool asDefinition = false, bool excludens = false,
+            bool isAlias = false, bool skipMethodTypeParam = false, bool removeScope = true, bool nomodule = false,
+            bool ignoreLiteralName = true, bool ignoreVirtual = false);
+
+        string ToTypeScriptName(IType type, bool asDefinition = false, bool excludens = false, 
+            bool ignoreDependency = false, List<string> guard = null);
+
+        string ToTypeScriptName(AstType astType, bool asDefinition = false,
+            bool ignoreDependency = false);
+
+        Tuple<string, string, Module> GetNamespaceFilename(ITypeInfo typeInfo);
+
+
+        string AddModule(string name, ITypeInfo typeInfo, bool excludeNs, bool isNested, out bool isCustomName);
+        string GetParentNames(IType type);
     }
 }

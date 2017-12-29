@@ -9,84 +9,63 @@ namespace Bridge.Translator
     {
         private class Analyzer : CSharpSyntaxWalker
         {
-            private bool _usesThis;
-            private readonly HashSet<ISymbol> _usedVariables = new HashSet<ISymbol>();
-            private readonly List<string> _usedVariablesNames = new List<string>();
             private readonly SemanticModel _semanticModel;
 
-            public bool UsesThis
-            {
-                get
-                {
-                    return _usesThis;
-                }
-            }
+            public bool UsesThis { get; private set; }
 
-            public HashSet<ISymbol> UsedVariables
-            {
-                get
-                {
-                    return _usedVariables;
-                }
-            }
+            public HashSet<ISymbol> UsedVariables { get; } = new HashSet<ISymbol>();
 
-            public List<string> UsedVariablesNames
-            {
-                get
-                {
-                    return _usedVariablesNames;
-                }
-            }
+            public List<string> UsedVariablesNames { get; } = new List<string>();
 
             public Analyzer(SemanticModel semanticModel)
             {
-                _semanticModel = semanticModel;
+                this._semanticModel = semanticModel;
             }
 
             public void Analyze(SyntaxNode node)
             {
-                _usesThis = false;
-                _usedVariables.Clear();
+                this.UsesThis = false;
+                this.UsedVariables.Clear();
 
-                if (node is SimpleLambdaExpressionSyntax)
+                if (node is SimpleLambdaExpressionSyntax simpleLambda)
                 {
-                    Visit(((SimpleLambdaExpressionSyntax)node).Body);
+                    this.Visit(simpleLambda.Body);
                 }
-                else if (node is ParenthesizedLambdaExpressionSyntax)
+                else if (node is ParenthesizedLambdaExpressionSyntax parenthesizedLambda)
                 {
-                    Visit(((ParenthesizedLambdaExpressionSyntax)node).Body);
+                    this.Visit(parenthesizedLambda.Body);
                 }
-                else if (node is AnonymousMethodExpressionSyntax)
+                else if (node is AnonymousMethodExpressionSyntax anonymousMethod)
                 {
-                    Visit(((AnonymousMethodExpressionSyntax)node).Block);
+                    this.Visit(anonymousMethod.Block);
                 }
                 else
                 {
-                    Visit(node);
+                    this.Visit(node);
                 }
             }
 
             public override void VisitThisExpression(ThisExpressionSyntax syntax)
             {
-                _usesThis = true;
+                this.UsesThis = true;
             }
 
             public override void VisitBaseExpression(BaseExpressionSyntax syntax)
             {
-                _usesThis = true;
+                this.UsesThis = true;
             }
 
             public override void VisitIdentifierName(IdentifierNameSyntax syntax)
             {
-                var symbol = _semanticModel.GetSymbolInfo(syntax).Symbol;
+                var symbol = this._semanticModel.GetSymbolInfo(syntax).Symbol;
 
                 if (symbol is ILocalSymbol || symbol is IParameterSymbol || symbol is IRangeVariableSymbol)
                 {
-                    _usedVariables.Add(symbol);
+                    this.UsedVariables.Add(symbol);
                 }
                 else if ((symbol is IFieldSymbol || symbol is IEventSymbol || symbol is IPropertySymbol || symbol is IMethodSymbol) && !symbol.IsStatic)
                 {
-                    _usesThis = true;
+                    this.UsesThis = true;
                 }
             }
 
@@ -112,17 +91,17 @@ namespace Bridge.Translator
 
             public override void VisitGenericName(GenericNameSyntax node)
             {
-                var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+                var symbol = this._semanticModel.GetSymbolInfo(node).Symbol;
 
                 if ((symbol is IFieldSymbol || symbol is IEventSymbol || symbol is IPropertySymbol || symbol is IMethodSymbol) && !symbol.IsStatic)
                 {
-                    _usesThis = true;
+                    this.UsesThis = true;
                 }
             }
 
             public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
             {
-                base.Visit(node.Expression);
+                this.Visit(node.Expression);
             }
 
             public override void VisitParameter(ParameterSyntax node)
@@ -157,25 +136,25 @@ namespace Bridge.Translator
 
     public class IdentifierReplacer : CSharpSyntaxRewriter
     {
-        private string name;
-        private ExpressionSyntax replacer;
+        private readonly string _name;
+        private readonly ExpressionSyntax _replacer;
 
         public IdentifierReplacer(string name, ExpressionSyntax replacer)
         {
-            this.name = name;
-            this.replacer = replacer;
+            this._name = name;
+            this._replacer = replacer;
         }
 
         public ExpressionSyntax Replace(ExpressionSyntax expr)
         {
-            return (ExpressionSyntax)Visit(expr);
+            return (ExpressionSyntax) this.Visit(expr);
         }
 
         public override SyntaxNode VisitIdentifierName(IdentifierNameSyntax syntax)
         {
-            if (syntax.Identifier.Value.ToString() == name)
+            if (syntax.Identifier.Value.ToString() == this._name)
             {
-                return this.replacer;
+                return this._replacer;
             }
 
             return syntax;
@@ -204,8 +183,8 @@ namespace Bridge.Translator
 
         public LocalUsageData(bool directlyOrIndirectlyUsesThis, ISet<ISymbol> directlyOrIndirectlyUsedVariables, IList<string> names)
         {
-            DirectlyOrIndirectlyUsesThis = directlyOrIndirectlyUsesThis;
-            DirectlyOrIndirectlyUsedLocals = new HashSet<ISymbol>(directlyOrIndirectlyUsedVariables);
+            this.DirectlyOrIndirectlyUsesThis = directlyOrIndirectlyUsesThis;
+            this.DirectlyOrIndirectlyUsedLocals = new HashSet<ISymbol>(directlyOrIndirectlyUsedVariables);
             this.Names = new List<string>(names);
         }
     }

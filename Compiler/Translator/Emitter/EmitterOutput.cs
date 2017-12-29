@@ -60,19 +60,13 @@ namespace Bridge.Translator
             set;
         }
 
-        public System.Collections.Generic.List<IPluginDependency> NonModuleDependencies
+        public List<IPluginDependency> NonModuleDependencies
         {
             get;
             set;
         }
 
-        public bool IsDefaultOutput
-        {
-            get
-            {
-                return this.FileName == AssemblyInfo.DEFAULT_FILENAME;
-            }
-        }
+        public bool IsDefaultOutput => this.FileName == AssemblyInfo.DEFAULT_FILENAME;
 
         public List<string> Names
         {

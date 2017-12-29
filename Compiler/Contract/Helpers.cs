@@ -4,17 +4,89 @@ using ICSharpCode.NRefactory.Semantics;
 using ICSharpCode.NRefactory.TypeSystem;
 using ICSharpCode.NRefactory.TypeSystem.Implementation;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using ICSharpCode.NRefactory.CSharp.Resolver;
+using Newtonsoft.Json;
 using ArrayType = ICSharpCode.NRefactory.TypeSystem.ArrayType;
 
 namespace Bridge.Contract
 {
-    public static partial class Helpers
+    public static class Helpers
     {
+        private static Dictionary<string, string> _replacements;
+        private static Regex _convRegex;
+        public static string ConvertName(this string name)
+        {
+            if (_convRegex == null)
+            {
+                _replacements = new Dictionary<string, string>(4);
+                _replacements.Add("`", JS.Vars.D.ToString());
+                _replacements.Add("/", ".");
+                _replacements.Add("+", ".");
+                _replacements.Add("[", "");
+                _replacements.Add("]", "");
+                _replacements.Add("&", "");
+
+                _convRegex = new Regex("(\\" + string.Join("|\\", _replacements.Keys.ToArray()) + ")", RegexOptions.Compiled | RegexOptions.Singleline);
+            }
+
+            return _convRegex.Replace
+            (
+                name,
+                delegate (Match m)
+                {
+                    return _replacements[m.Value];
+                }
+            );
+        }
+
+        public static string ToJavaScript(this object value)
+        {
+            return JsonConvert.SerializeObject(value);
+        }
+
+        public static string GetGlobalTarget(this ITypeDefinition typeDefinition, AstNode node, bool removeGlobal = false)
+        {
+            string globalTarget = null;
+            var globalMethods = typeDefinition.HasGlobalMethodsAttribute();
+            if (globalMethods.HasValue)
+            {
+                globalTarget = !removeGlobal || globalMethods.Value ? JS.Types.Bridge.Global.NAME : "";
+            }
+            else
+            {
+                try
+                {
+                    var mixin = typeDefinition.GetMixin();
+                    globalTarget = mixin;
+                }
+                catch (InvalidDataException e)
+                {
+                    throw new EmitterException(node, e.Message);
+                }
+            }
+
+            return globalTarget;
+        }
+
+        public static bool IsRightAssigmentExpression(this AssignmentExpression expression)
+        {
+            return (expression.Right is ParenthesizedExpression ||
+                    expression.Right is IdentifierExpression ||
+                    expression.Right is MemberReferenceExpression ||
+                    expression.Right is PrimitiveExpression ||
+                    expression.Right is IndexerExpression ||
+                    expression.Right is LambdaExpression ||
+                    expression.Right is AnonymousMethodExpression ||
+                    expression.Right is ObjectCreateExpression);
+        }
+
+
         public static void CheckIdentifier(string name, AstNode context)
         {
             if (IsReservedWord(null, name))
@@ -314,7 +386,7 @@ namespace Bridge.Contract
                 if (expression != null &&
                     (expression.Parent is BinaryOperatorExpression || expression.Parent is UnaryOperatorExpression))
                 {
-                    var orr = block.Emitter.Resolver.ResolveNode(expression.Parent, block.Emitter) as OperatorResolveResult;
+                    var orr = block.Emitter.Resolver.ResolveNode(expression.Parent) as OperatorResolveResult;
 
                     isOperator = orr != null && orr.UserDefinedOperatorMethod != null;
                 }
@@ -406,7 +478,7 @@ namespace Bridge.Contract
 
         public static string GetEventRef(CustomEventDeclaration property, IEmitter emitter, bool remove = false, bool noOverload = false, bool ignoreInterface = false, bool withoutTypeParams = false)
         {
-            MemberResolveResult resolveResult = emitter.Resolver.ResolveNode(property, emitter) as MemberResolveResult;
+            MemberResolveResult resolveResult = emitter.Resolver.ResolveNode(property) as MemberResolveResult;
             if (resolveResult != null && resolveResult.Member != null)
             {
                 return Helpers.GetEventRef(resolveResult.Member, emitter, remove, noOverload, ignoreInterface, withoutTypeParams);
@@ -448,7 +520,7 @@ namespace Bridge.Contract
 
         public static string GetPropertyRef(PropertyDeclaration property, IEmitter emitter, bool isSetter = false, bool noOverload = false, bool ignoreInterface = false, bool withoutTypeParams = false, bool skipPrefix = true)
         {
-            ResolveResult resolveResult = emitter.Resolver.ResolveNode(property, emitter) as MemberResolveResult;
+            ResolveResult resolveResult = emitter.Resolver.ResolveNode(property) as MemberResolveResult;
             if (resolveResult != null && ((MemberResolveResult)resolveResult).Member != null)
             {
                 return Helpers.GetPropertyRef(((MemberResolveResult)resolveResult).Member, emitter, isSetter, noOverload, ignoreInterface, withoutTypeParams, skipPrefix);
@@ -468,7 +540,7 @@ namespace Bridge.Contract
 
         public static string GetPropertyRef(IndexerDeclaration property, IEmitter emitter, bool isSetter = false, bool noOverload = false, bool ignoreInterface = false)
         {
-            ResolveResult resolveResult = emitter.Resolver.ResolveNode(property, emitter) as MemberResolveResult;
+            ResolveResult resolveResult = emitter.Resolver.ResolveNode(property) as MemberResolveResult;
             if (resolveResult != null && ((MemberResolveResult)resolveResult).Member != null)
             {
                 return Helpers.GetIndexerRef(((MemberResolveResult)resolveResult).Member, emitter, isSetter, noOverload, ignoreInterface);
@@ -823,7 +895,7 @@ namespace Bridge.Contract
 
         public static bool IsEntryPointMethod(IEmitter emitter, MethodDeclaration methodDeclaration)
         {
-            var member_rr = emitter.Resolver.ResolveNode(methodDeclaration, emitter) as MemberResolveResult;
+            var member_rr = emitter.Resolver.ResolveNode(methodDeclaration) as MemberResolveResult;
             IMethod method = member_rr != null ? member_rr.Member as IMethod : null;
 
             return Helpers.IsEntryPointMethod(method);
@@ -853,7 +925,7 @@ namespace Bridge.Contract
                 return false;
             }
 
-            var m_rr = emitter.Resolver.ResolveNode(methodDeclaration, emitter) as MemberResolveResult;
+            var m_rr = emitter.Resolver.ResolveNode(methodDeclaration) as MemberResolveResult;
 
             if (m_rr == null || !(m_rr.Member is IMethod))
             {
@@ -964,13 +1036,13 @@ namespace Bridge.Contract
                     break;
                 case NamedFunctionMode.FullName:
                     var td = member.DeclaringTypeDefinition;
-                    name = td != null ? BridgeTypes.ToJsName(td, emitter, true) : "";
+                    name = td != null ? emitter.ToJsName(td, true) : "";
                     name = name.Replace(".", "_");
                     name += "_" + overloads.GetOverloadName(false, null, true);
                     break;
                 case NamedFunctionMode.ClassName:
                     var t = member.DeclaringType;
-                    name = BridgeTypes.ToJsName(t, emitter, true, true);
+                    name = emitter.ToJsName(t, true, true);
                     name = name.Replace(".", "_");
                     name += "_" + overloads.GetOverloadName(false, null, true);
                     break;
@@ -1046,7 +1118,7 @@ namespace Bridge.Contract
                     }
                     else
                     {
-                        sb.Append(BridgeTypes.ToJsName(typeParameter, emitter));
+                        sb.Append(emitter.ToJsName(typeParameter));
                     }
                     comma = true;
                 }

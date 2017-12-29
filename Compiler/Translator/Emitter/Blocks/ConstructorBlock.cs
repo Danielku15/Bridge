@@ -54,7 +54,7 @@ namespace Bridge.Translator
         protected virtual IEnumerable<string> GetInjectors()
         {
             var handlers = this.GetEventsAndAutoStartupMethods();
-            var injectors = this.Emitter.Plugins.GetConstructorInjectors(this);
+            var injectors = this.Emitter.Translator.Plugins.GetConstructorInjectors(this);
             return injectors.Concat(handlers);
         }
 
@@ -158,7 +158,7 @@ namespace Bridge.Translator
                 var beginPosition = this.Emitter.Output.Length;
 
                 var oldRules = this.Emitter.Rules;
-                var rr = this.Emitter.Resolver.ResolveNode(ctor, this.Emitter) as MemberResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(ctor) as MemberResolveResult;
                 if (rr != null)
                 {
                     this.Emitter.Rules = Rules.Get(this.Emitter, rr.Member);
@@ -321,7 +321,7 @@ namespace Bridge.Translator
                 MemberResolveResult rr = null;
                 if (ctor.Body.HasChildren)
                 {
-                    rr = this.Emitter.Resolver.ResolveNode(ctor, this.Emitter) as MemberResolveResult;
+                    rr = this.Emitter.Resolver.ResolveNode(ctor) as MemberResolveResult;
                     if (rr != null)
                     {
                         this.Emitter.Rules = Rules.Get(this.Emitter, rr.Member);
@@ -402,7 +402,7 @@ namespace Bridge.Translator
                     string name = this.Emitter.GetCustomTypeName(typeDef, false);
                     if (name.IsEmpty())
                     {
-                        name = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter);
+                        name = this.Emitter.ToJsName(this.TypeInfo.Type);
                     }
 
                     this.Write(JS.Vars.D_THIS + "." + JS.Funcs.GET_TYPE + " = function () { return " + name + "; };");
@@ -452,7 +452,7 @@ namespace Bridge.Translator
                                     this.WriteComma();
                                     this.Emitter.Comma = false;
                                     this.BeginBlock();
-                                    var memberResult = this.Emitter.Resolver.ResolveNode(p, this.Emitter) as MemberResolveResult;
+                                    var memberResult = this.Emitter.Resolver.ResolveNode(p) as MemberResolveResult;
                                     var block = new VisitorPropertyBlock(this.Emitter, p);
                                     block.EmitPropertyMethod(p, p.Getter, ((IProperty)memberResult.Member).Getter, false, true);
                                     block.EmitPropertyMethod(p, p.Setter, ((IProperty)memberResult.Member).Setter, true, true);
@@ -576,7 +576,7 @@ namespace Bridge.Translator
         {
             if (ctor.Initializer != null && !ctor.Initializer.IsNull)
             {
-                var member = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(ctor.Initializer, this.Emitter)).Member;
+                var member = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(ctor.Initializer)).Member;
 
                 var inlineCode = this.Emitter.GetInline(member);
 
@@ -610,11 +610,11 @@ namespace Bridge.Translator
                     string name = null;
                     if (this.TypeInfo.GetBaseTypes(this.Emitter).Any())
                     {
-                        name = BridgeTypes.ToJsName(this.TypeInfo.GetBaseClass(this.Emitter), this.Emitter);
+                        name = this.Emitter.ToJsName(this.TypeInfo.GetBaseClass(this.Emitter));
                     }
                     else
                     {
-                        name = BridgeTypes.ToJsName(baseType, this.Emitter);
+                        name = this.Emitter.ToJsName(baseType);
                     }
 
                     this.Write(name);
@@ -724,7 +724,7 @@ namespace Bridge.Translator
 
                 if (ctor.Initializer != null && !ctor.Initializer.IsNull)
                 {
-                    var member = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(ctor.Initializer, this.Emitter)).Member;
+                    var member = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(ctor.Initializer)).Member;
                     var overloads = OverloadsCollection.Create(this.Emitter, member);
                     if (overloads.HasOverloads)
                     {
@@ -736,11 +736,11 @@ namespace Bridge.Translator
 
                 if (this.TypeInfo.GetBaseTypes(this.Emitter).Any())
                 {
-                    name = BridgeTypes.ToJsName(this.TypeInfo.GetBaseClass(this.Emitter), this.Emitter);
+                    name = this.Emitter.ToJsName(this.TypeInfo.GetBaseClass(this.Emitter));
                 }
                 else
                 {
-                    name = BridgeTypes.ToJsName(baseType, this.Emitter);
+                    name = this.Emitter.ToJsName(baseType);
                 }
 
                 if(!isObjectLiteral && isBaseObjectLiteral)
@@ -763,12 +763,12 @@ namespace Bridge.Translator
             else
             {
                 // this.WriteThis();
-                string name = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter);
+                string name = this.Emitter.ToJsName(this.TypeInfo.Type);
                 this.Write(name);
                 this.WriteDot();
 
                 var baseName = JS.Funcs.CONSTRUCTOR;
-                var member = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(ctor.Initializer, this.Emitter)).Member;
+                var member = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(ctor.Initializer)).Member;
                 var overloads = OverloadsCollection.Create(this.Emitter, member);
                 if (overloads.HasOverloads)
                 {

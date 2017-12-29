@@ -142,7 +142,7 @@ namespace Bridge.Translator
                    
                     if (this.MethodDeclaration.TypeParameters.Count > 0)
                     {
-                        var resolveResult = Emitter.Resolver.ResolveNode(this.MethodDeclaration, this.Emitter) as MemberResolveResult;
+                        var resolveResult = Emitter.Resolver.ResolveNode(this.MethodDeclaration) as MemberResolveResult;
                         if (resolveResult == null || resolveResult.Member == null || !resolveResult.Member.IsIgnoreGeneric())
                         {
                             tprms = this.MethodDeclaration.TypeParameters;
@@ -298,19 +298,19 @@ namespace Bridge.Translator
         {
             if(this.MethodDeclaration != null)
             {
-                this.ReturnType = this.Emitter.Resolver.ResolveNode(this.MethodDeclaration.ReturnType, this.Emitter).Type;
+                this.ReturnType = this.Emitter.Resolver.ResolveNode(this.MethodDeclaration.ReturnType).Type;
             }
             else if(this.LambdaExpression != null)
             {
-                this.ReturnType = ((LambdaResolveResult)this.Emitter.Resolver.ResolveNode(this.LambdaExpression, this.Emitter)).ReturnType;
+                this.ReturnType = ((LambdaResolveResult)this.Emitter.Resolver.ResolveNode(this.LambdaExpression)).ReturnType;
             }
             else if(this.AnonymousMethodExpression != null)
             {
-                this.ReturnType = ((LambdaResolveResult)this.Emitter.Resolver.ResolveNode(this.AnonymousMethodExpression, this.Emitter)).ReturnType;
+                this.ReturnType = ((LambdaResolveResult)this.Emitter.Resolver.ResolveNode(this.AnonymousMethodExpression)).ReturnType;
             }
             else if(this.Accessor != null)
             {
-                this.ReturnType = this.Emitter.Resolver.ResolveNode(((EntityDeclaration)this.Accessor.Parent).ReturnType, this.Emitter).Type;
+                this.ReturnType = this.Emitter.Resolver.ResolveNode(((EntityDeclaration)this.Accessor.Parent).ReturnType).Type;
             }
 
             IsEnumeratorReturn = this.ReturnType.Name == "IEnumerator";
@@ -353,7 +353,7 @@ namespace Bridge.Translator
 
                 if(this.ReturnType.IsParameterized)
                 {
-                    this.Write("(Bridge.GeneratorEnumerable$1(" + BridgeTypes.ToJsName(this.ReturnType.TypeArguments[0], this.Emitter) + "))");
+                    this.Write("(Bridge.GeneratorEnumerable$1(" + this.Emitter.ToJsName(this.ReturnType.TypeArguments[0]) + "))");
                 }
                 else
                 {
@@ -420,7 +420,7 @@ namespace Bridge.Translator
 
             if(this.ReturnType.IsParameterized)
             {
-                this.Write("(" + JS.Types.Bridge.Generator.NAME_GENERIC +"(" + BridgeTypes.ToJsName(this.ReturnType.TypeArguments[0], this.Emitter) + "))");
+                this.Write("(" + JS.Types.Bridge.Generator.NAME_GENERIC +"(" + this.Emitter.ToJsName(this.ReturnType.TypeArguments[0]) + "))");
             }
             else
             {

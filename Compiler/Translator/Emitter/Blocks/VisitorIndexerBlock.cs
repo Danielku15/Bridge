@@ -28,7 +28,7 @@ namespace Bridge.Translator
             base.BeginEmit();
             this.OldRules = this.Emitter.Rules;
 
-            var rr = this.Emitter.Resolver.ResolveNode(this.IndexerDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(this.IndexerDeclaration) as MemberResolveResult;
 
             if (rr != null)
             {
@@ -44,7 +44,7 @@ namespace Bridge.Translator
 
         protected override void DoEmit()
         {
-            var rr = this.Emitter.Resolver.ResolveNode(this.IndexerDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(this.IndexerDeclaration) as MemberResolveResult;
             IProperty prop = null;
             if (rr != null)
             {
@@ -86,7 +86,7 @@ namespace Bridge.Translator
 
                 string accName = null;
 
-                var member_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(indexerDeclaration, this.Emitter);
+                var member_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(indexerDeclaration);
                 if (prop != null)
                 {
                     accName = this.Emitter.GetEntityNameFromAttr(prop, setter);

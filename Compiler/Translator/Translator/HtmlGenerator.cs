@@ -1,11 +1,7 @@
 using Bridge.Contract;
-using Bridge.Contract.Constants;
-using Microsoft.Ajax.Utilities;
-using Mono.Cecil;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace Bridge.Translator
@@ -50,7 +46,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var htmlTemplate = ReadEmbeddedResource("Bridge.Translator.Resources.HtmlTemplate.html");
+            var htmlTemplate = this.ReadEmbeddedResource("Bridge.Translator.Resources.HtmlTemplate.html");
             this.Log.Trace("Applying default html template");
 
             var tokenTitle = "{title}";
@@ -63,23 +59,16 @@ namespace Bridge.Translator
             var cssLinkTemplate = "<link rel=\"stylesheet\" href=\"{0}\">";
             var scriptTemplate = "<script src=\"{0}\"></script>";
 
-            var indentCss = GetIndent(htmlTemplate, indexCss);
-            var indentScript = GetIndent(htmlTemplate, indexScript);
+            var indentCss = this.GetIndent(htmlTemplate, indexCss);
+            var indentScript = this.GetIndent(htmlTemplate, indexScript);
 
             var cssBuffer = new StringBuilder();
             var jsBuffer = new StringBuilder();
             var jsMinBuffer = new StringBuilder();
 
-            IEnumerable<TranslatorOutputItem> outputForHtml;
-
-            if (this.Outputs.Resources.Count > 0)
-            {
-                outputForHtml = this.Outputs.Resources;
-            }
-            else
-            {
-                outputForHtml = this.Outputs.GetOutputs();
-            }
+            var outputForHtml = this.Outputs.Resources.Count > 0
+                            ? this.Outputs.Resources
+                            : this.Outputs.GetOutputs();
 
             var firstJs = true;
             var firstMinJs = true;
@@ -115,7 +104,8 @@ namespace Bridge.Translator
 
                         jsBuffer.Append(string.Format(scriptTemplate, output.GetOutputPath(outputPath, true, outputLogger)));
                     }
-                } else if (output.OutputType == TranslatorOutputType.StyleSheets && indexCss >= 0)
+                }
+                else if (output.OutputType == TranslatorOutputType.StyleSheets && indexCss >= 0)
                 {
                     if (!firstCss)
                     {
@@ -195,7 +185,7 @@ namespace Bridge.Translator
 
         private string ReadEmbeddedResource(string name)
         {
-            var assembly = System.Reflection. Assembly.GetExecutingAssembly();
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 
             using (Stream stream = assembly.GetManifestResourceStream(name))
             {

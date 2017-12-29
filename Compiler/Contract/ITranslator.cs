@@ -1,10 +1,11 @@
 using ICSharpCode.NRefactory.CSharp;
 using Mono.Cecil;
 using System.Collections.Generic;
+using ICSharpCode.NRefactory.TypeSystem;
 
 namespace Bridge.Contract
 {
-    public interface ITranslator
+    public interface ITranslator : ILogger
     {
         AssemblyDefinition AssemblyDefinition
         {
@@ -46,16 +47,15 @@ namespace Bridge.Contract
             get;
         }
 
-        ILogger Log
+        string MSBuildVersion
         {
             get;
             set;
         }
 
-        string MSBuildVersion
+        ILogger Log
         {
             get;
-            set;
         }
 
         TranslatorOutput Outputs
@@ -69,33 +69,18 @@ namespace Bridge.Contract
             set;
         }
 
-        void Save(string path, string defaultFileName);
-
-        System.Collections.Generic.IList<string> SourceFiles
+        IList<string> SourceFiles
         {
             get;
         }
 
-        void Translate();
-
-        System.Collections.Generic.Dictionary<string, ITypeInfo> TypeInfoDefinitions
+        ITypeInfoCollection Types
         {
             get;
             set;
-        }
-
-        System.Collections.Generic.List<ITypeInfo> Types
-        {
-            get;
         }
 
         IPlugins Plugins
-        {
-            get;
-            set;
-        }
-
-        BridgeTypes BridgeTypes
         {
             get;
             set;
@@ -107,7 +92,6 @@ namespace Bridge.Contract
             set;
         }
 
-        EmitterException CreateExceptionFromLastNode();
 
         bool FolderMode
         {
@@ -130,7 +114,6 @@ namespace Bridge.Contract
         IEnumerable<AssemblyDefinition> References
         {
             get;
-            set;
         }
 
         /// <summary>
@@ -139,9 +122,26 @@ namespace Bridge.Contract
         bool NoStrictMode
         {
             get;
-            set;
+        }
+
+        IEmitter Emitter
+        {
+            get;
+        }
+
+        IMemberResolver Resolver
+        {
+            get;
         }
 
         VersionContext GetVersionContext();
+
+        EmitterException CreateExceptionFromLastNode();
+
+        void Save(string path, string defaultFileName);
+        void Translate();
+        ITypeInfo GetTypeInfo(AstNode type);
+        bool IsCurrentAssembly(IAssembly assembly);
+        bool IsInCurrentAssembly(IEntity entity);
     }
 }

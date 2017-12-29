@@ -7,7 +7,8 @@ namespace Bridge.Contract
 {
     public interface IMemberResolver
     {
-        ResolveResult ResolveNode(AstNode node, ILog log);
+        ResolveResult ResolveNode(AstNode node);
+        T ResolveNode<T>(AstNode node) where T: ResolveResult;
 
         CSharpAstResolver Resolver
         {

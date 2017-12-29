@@ -8,56 +8,62 @@ using ICSharpCode.NRefactory.TypeSystem.Implementation;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Mono.Cecil;
 
 namespace Bridge.Translator
 {
     public class MemberResolver : IMemberResolver
     {
         private string lastFileName;
+        private readonly ILogger _log;
         private IList<ParsedSourceFile> sourceFiles;
         private ICompilation compilation;
         private CSharpAstResolver resolver;
         private IProjectContent project;
 
-        public bool CanFreeze
+        public CSharpAstResolver Resolver => this.resolver;
+
+        public ICompilation Compilation => this.compilation;
+
+        public IEnumerable<IAssemblyReference> References
         {
-            get;
-            set;
+            get; set;
         }
 
-        public CSharpAstResolver Resolver
+        public MemberResolver(ILogger log, IList<ParsedSourceFile> sourceFiles,
+            IEnumerable<AssemblyDefinition> references, string assemblyFullName)
+            : this(log, sourceFiles,
+                 references.Select(asm => new CecilLoader { IncludeInternalMembers = true }.LoadAssembly(asm)),
+                 assemblyFullName)
         {
-            get
-            {
-                return this.resolver;
-            }
         }
 
-        public ICompilation Compilation
-        {
-            get
-            {
-                return this.compilation;
-            }
-        }
-
-        public IEnumerable<IAssemblyReference> Assemblies
-        {
-            get;
-            private set;
-        }
-
-        public MemberResolver(IList<ParsedSourceFile> sourceFiles, IEnumerable<IAssemblyReference> assemblies, string assemblyFullName)
+        public MemberResolver(ILogger log, IList<ParsedSourceFile> sourceFiles,
+            IEnumerable<IAssemblyReference> references, string assemblyFullName)
         {
             this.project = null;
             this.lastFileName = null;
+            this._log = log;
             this.sourceFiles = sourceFiles;
-            this.Assemblies = assemblies;
-
+            this.References = references;
             this.project = new CSharpProjectContent();
-            this.project = this.project.AddAssemblyReferences(assemblies);
+            this.project = this.project.AddAssemblyReferences(this.References);
             this.project = this.project.SetAssemblyName(assemblyFullName);
             this.AddOrUpdateFiles();
+        }
+
+        private class SimpleAssemblyReference : IAssemblyReference
+        {
+            private readonly IAssembly _assembly;
+
+            public SimpleAssemblyReference(IAssembly assembly)
+            {
+                this._assembly = assembly;
+            }
+            public IAssembly Resolve(ITypeResolveContext context)
+            {
+                return this._assembly;
+            }
         }
 
         private void AddOrUpdateFiles()
@@ -67,12 +73,6 @@ namespace Bridge.Translator
             Parallel.For(0, unresolvedFiles.Length, i =>
             {
                 var syntaxTree = this.sourceFiles[i].SyntaxTree;
-
-                if (this.CanFreeze)
-                {
-                    //syntaxTree.Freeze();
-                }
-
                 unresolvedFiles[i] = syntaxTree.ToTypeSystem();
             });
 
@@ -96,7 +96,12 @@ namespace Bridge.Translator
             }
         }
 
-        public ResolveResult ResolveNode(AstNode node, ILog log)
+        public T ResolveNode<T>(AstNode node) where T : ResolveResult
+        {
+            return this.ResolveNode(node) as T;
+        }
+
+        public ResolveResult ResolveNode(AstNode node)
         {
             var syntaxTree = node.GetParent<SyntaxTree>();
             this.InitResolver(syntaxTree);
@@ -106,7 +111,7 @@ namespace Bridge.Translator
             if (result is MethodGroupResolveResult && node.Parent != null)
             {
                 var methodGroupResolveResult = (MethodGroupResolveResult)result;
-                var parentResolveResult = this.ResolveNode(node.Parent, log);
+                var parentResolveResult = this.ResolveNode(node.Parent);
                 var parentInvocation = parentResolveResult as InvocationResolveResult;
                 IParameterizedMember method = methodGroupResolveResult.Methods.LastOrDefault();
                 bool isInvocation = node.Parent is InvocationExpression && (((InvocationExpression)(node.Parent)).Target == node);
@@ -167,14 +172,14 @@ namespace Bridge.Translator
                 return parentResolveResult;
             }
 
-            if ((result == null || result.IsError) && log != null)
+            if ((result == null || result.IsError) && _log != null)
             {
                 if (result is CSharpInvocationResolveResult && ((CSharpInvocationResolveResult)result).OverloadResolutionErrors != OverloadResolutionErrors.None)
                 {
                     return result;
                 }
 
-                log.LogWarning(string.Format("Node resolving has failed {0}: {1}", node.StartLocation, node.ToString()));
+                _log.Warn(string.Format("Node resolving has failed {0}: {1}", node.StartLocation, node.ToString()));
             }
 
             return result;

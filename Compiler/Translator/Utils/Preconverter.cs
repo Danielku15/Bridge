@@ -56,7 +56,7 @@ namespace Bridge.Translator
                 unaryOperatorExpression.Operator == UnaryOperatorType.Decrement ||
                 unaryOperatorExpression.Operator == UnaryOperatorType.PostDecrement))
             {
-                var rr = this.Resolver.ResolveNode(unaryOperatorExpression, null);
+                var rr = this.Resolver.ResolveNode(unaryOperatorExpression);
 
                 if (rr is ErrorResolveResult)
                 {
@@ -64,9 +64,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var orr = rr as OperatorResolveResult;
-
-                    if (orr != null && !Helpers.IsFloatType(orr.Type, this.Resolver) && !Helpers.Is64Type(orr.Type, this.Resolver))
+                    if (rr is OperatorResolveResult orr && !Helpers.IsFloatType(orr.Type, this.Resolver) && !Helpers.Is64Type(orr.Type, this.Resolver))
                     {
                         this.Found = true;
                     }
@@ -85,7 +83,7 @@ namespace Bridge.Translator
 
             if (assignmentExpression.Operator != AssignmentOperatorType.Any && assignmentExpression.Operator != AssignmentOperatorType.Assign)
             {
-                var rr = this.Resolver.ResolveNode(assignmentExpression, null);
+                var rr = this.Resolver.ResolveNode(assignmentExpression);
                 var isInt = Helpers.IsIntegerType(rr.Type, this.Resolver);
                 if (this.Rules.Integer == IntegerRule.Managed && isInt || !(assignmentExpression.Parent is ExpressionStatement))
                 {
@@ -99,7 +97,7 @@ namespace Bridge.Translator
 
                 if (this.Found && !isInt && assignmentExpression.Parent is ICSharpCode.NRefactory.CSharp.LambdaExpression)
                 {
-                    var lambdarr = this.Resolver.ResolveNode(assignmentExpression.Parent, null) as LambdaResolveResult;
+                    var lambdarr = this.Resolver.ResolveNode<LambdaResolveResult>(assignmentExpression.Parent);
 
                     if (lambdarr != null && lambdarr.ReturnType.Kind == TypeKind.Void)
                     {
@@ -118,7 +116,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var rr = this.Resolver.ResolveNode(methodDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(methodDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -138,7 +136,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var rr = this.Resolver.ResolveNode(propertyDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(propertyDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -158,7 +156,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var rr = this.Resolver.ResolveNode(indexerDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(indexerDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -178,7 +176,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var rr = this.Resolver.ResolveNode(eventDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(eventDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -198,7 +196,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var rr = this.Resolver.ResolveNode(typeDeclaration, null) as TypeResolveResult;
+            var rr = this.Resolver.ResolveNode<TypeResolveResult>(typeDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Type.GetDefinition());
@@ -218,7 +216,7 @@ namespace Bridge.Translator
                 return;
             }
 
-            var rr = this.Resolver.ResolveNode(invocationExpression, null) as InvocationResolveResult;
+            var rr = this.Resolver.ResolveNode<InvocationResolveResult>(invocationExpression);
 
             if (rr != null && rr.IsError)
             {
@@ -281,7 +279,7 @@ namespace Bridge.Translator
 
         public override AstNode VisitMethodDeclaration(MethodDeclaration methodDeclaration)
         {
-            var rr = this.Resolver.ResolveNode(methodDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(methodDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -296,7 +294,7 @@ namespace Bridge.Translator
 
         public override AstNode VisitPropertyDeclaration(PropertyDeclaration propertyDeclaration)
         {
-            var rr = this.Resolver.ResolveNode(propertyDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(propertyDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -311,7 +309,7 @@ namespace Bridge.Translator
 
         public override AstNode VisitIndexerDeclaration(IndexerDeclaration indexerDeclaration)
         {
-            var rr = this.Resolver.ResolveNode(indexerDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(indexerDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -326,7 +324,7 @@ namespace Bridge.Translator
 
         public override AstNode VisitCustomEventDeclaration(CustomEventDeclaration eventDeclaration)
         {
-            var rr = this.Resolver.ResolveNode(eventDeclaration, null) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode<MemberResolveResult>(eventDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
@@ -341,7 +339,7 @@ namespace Bridge.Translator
 
         public override AstNode VisitTypeDeclaration(TypeDeclaration typeDeclaration)
         {
-            var rr = this.Resolver.ResolveNode(typeDeclaration, null) as TypeResolveResult;
+            var rr = this.Resolver.ResolveNode<TypeResolveResult>(typeDeclaration);
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Type.GetDefinition());
@@ -494,7 +492,7 @@ namespace Bridge.Translator
         {
             try
             {
-                var rr = this.Resolver.ResolveNode(invocationExpression, null) as CSharpInvocationResolveResult;
+                var rr = this.Resolver.ResolveNode<CSharpInvocationResolveResult>(invocationExpression);
 
                 if (rr != null && rr.IsError)
                 {
@@ -527,12 +525,12 @@ namespace Bridge.Translator
                     return clonInvocationExpression;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 var fileName = invocationExpression.GetParent<SyntaxTree>()?.FileName;
-                
+
                 this.log.Warn(string.Format("VisitInvocationExpression fails in {0} ({1}): {2}", fileName, invocationExpression.StartLocation.ToString(), e.Message));
-            }            
+            }
 
             return base.VisitInvocationExpression(invocationExpression);
         }
@@ -544,7 +542,7 @@ namespace Bridge.Translator
                 unaryOperatorExpression.Operator == UnaryOperatorType.Decrement ||
                 unaryOperatorExpression.Operator == UnaryOperatorType.PostDecrement))
             {
-                var rr = this.Resolver.ResolveNode(unaryOperatorExpression, null);
+                var rr = this.Resolver.ResolveNode(unaryOperatorExpression);
 
                 if (rr is ErrorResolveResult)
                 {
@@ -632,7 +630,7 @@ namespace Bridge.Translator
 
         public override AstNode VisitAssignmentExpression(AssignmentExpression assignmentExpression)
         {
-            var rr = this.Resolver.ResolveNode(assignmentExpression, null);
+            var rr = this.Resolver.ResolveNode(assignmentExpression);
             var orr = rr as OperatorResolveResult;
             var simpleIndex = true;
 
@@ -666,7 +664,7 @@ namespace Bridge.Translator
 
             if (found && !isInt && assignmentExpression.Parent is ICSharpCode.NRefactory.CSharp.LambdaExpression)
             {
-                var lambdarr = this.Resolver.ResolveNode(assignmentExpression.Parent, null) as LambdaResolveResult;
+                var lambdarr = this.Resolver.ResolveNode<LambdaResolveResult>(assignmentExpression.Parent);
 
                 if (lambdarr != null && lambdarr.ReturnType.Kind == TypeKind.Void)
                 {
@@ -712,7 +710,7 @@ namespace Bridge.Translator
 
                     if (needReturnValue && assignmentExpression.Parent is LambdaExpression)
                     {
-                        var lambdarr = this.Resolver.ResolveNode(assignmentExpression.Parent, null) as LambdaResolveResult;
+                        var lambdarr = this.Resolver.ResolveNode<LambdaResolveResult>(assignmentExpression.Parent);
 
                         if (lambdarr != null && lambdarr.ReturnType.Kind == TypeKind.Void)
                         {
@@ -776,7 +774,7 @@ namespace Bridge.Translator
                         throw new ArgumentOutOfRangeException();
                 }
 
-                var wrapRightExpression = AssigmentExpressionHelper.CheckIsRightAssigmentExpression(clonAssignmentExpression)
+                var wrapRightExpression = clonAssignmentExpression.IsRightAssigmentExpression()
                     ? clonAssignmentExpression.Right.Clone()
                     : new ParenthesizedExpression(clonAssignmentExpression.Right.Clone());
 

@@ -7,6 +7,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Bridge.Contract.Constants;
 using Bridge.Translator.Utils;
+// ReSharper disable InconsistentNaming
 
 namespace Bridge.Translator
 {
@@ -31,11 +32,11 @@ namespace Bridge.Translator
 
         internal virtual void EnsureProjectProperties()
         {
-            this.Log.Trace("EnsureProjectProperties at " + (Location ?? "") + " ...");
+            this.Log.Trace("EnsureProjectProperties at " + (this.Location ?? "") + " ...");
 
-            ShouldReadProjectFile = !this.FromTask;
+            this.ShouldReadProjectFile = !this.FromTask;
 
-            var doc = XDocument.Load(Location, LoadOptions.SetLineInfo);
+            var doc = XDocument.Load(this.Location, LoadOptions.SetLineInfo);
 
             this.ValidateProject(doc);
 
@@ -125,7 +126,7 @@ namespace Bridge.Translator
                         tag.Value + "</" + tag.Name.LocalName + ">\n";
                 }
 
-                throw new Bridge.Translator.TranslatorException("'Bridge' name is reserved and may not " +
+                throw new TranslatorException("'Bridge' name is reserved and may not " +
                     "be used as project names or root namespaces.\n" +
                     "Please verify your project settings and rename where it applies.\n" +
                     "Project file: " + this.Location + "\n" +
@@ -135,7 +136,7 @@ namespace Bridge.Translator
 
             var outputType = this.ProjectProperties.OutputType;
 
-            if (outputType == null && ShouldReadProjectFile)
+            if (outputType == null && this.ShouldReadProjectFile)
             {
                 var projectType = (from n in doc.Descendants()
                                    where n.Name.LocalName == ProjectPropertyNames.OUTPUT_TYPE_PROP
@@ -147,9 +148,9 @@ namespace Bridge.Translator
                 }
             }
 
-            if (outputType != null && string.Compare(outputType, Translator.SupportedProjectType, true) != 0)
+            if (outputType != null && String.Compare(outputType, SupportedProjectType, StringComparison.InvariantCultureIgnoreCase) != 0)
             {
-                Bridge.Translator.TranslatorException.Throw("Project type ({0}) is not supported, please use Library instead of {0}", outputType);
+                TranslatorException.Throw("Project type ({0}) is not supported, please use Library instead of {0}", outputType);
             }
         }
 
@@ -165,17 +166,16 @@ namespace Bridge.Translator
                 return;
             }
 
-            var nodes = from n in doc.Descendants()
+            var node = (from n in doc.Descendants()
                         where n.Name.LocalName == "CheckForOverflowUnderflow"
-                        select n;
+                        select n).LastOrDefault();
 
-            if (nodes.Any())
+            if (node != null)
             {
-                var value = nodes.Last().Value;
-                bool boolValue;
-                if (bool.TryParse(value, out boolValue))
+                var value = node.Value;
+                if (bool.TryParse(value, out var boolValue))
                 {
-                    this.OverflowMode = boolValue ? Bridge.Contract.OverflowMode.Checked : Bridge.Contract.OverflowMode.Unchecked;
+                    this.OverflowMode = boolValue ? Contract.OverflowMode.Checked : Contract.OverflowMode.Unchecked;
                 }
             }
         }
@@ -202,7 +202,7 @@ namespace Bridge.Translator
 
         protected virtual string GetOutputPaths(XDocument doc)
         {
-            var configHelper = new Bridge.Contract.ConfigHelper();
+            var configHelper = new Contract.ConfigHelper();
 
             var outputPath = this.ProjectProperties.OutputPath;
 
@@ -210,7 +210,7 @@ namespace Bridge.Translator
             {
                 // Read OutputPath if not defined already
                 // Throw exception if not found
-                outputPath = ReadProperty(doc, ProjectPropertyNames.OUTPUT_PATH_PROP, false, configHelper);
+                outputPath = this.ReadProperty(doc, ProjectPropertyNames.OUTPUT_PATH_PROP, false, configHelper);
             }
 
             if (outputPath == null)
@@ -225,7 +225,7 @@ namespace Bridge.Translator
             if (outDir == null && this.ShouldReadProjectFile)
             {
                 // Read OutDir if not defined already
-                outDir = ReadProperty(doc, ProjectPropertyNames.OUT_DIR_PROP, true, configHelper);
+                outDir = this.ReadProperty(doc, ProjectPropertyNames.OUT_DIR_PROP, true, configHelper);
             }
 
             // If OutDir value is not found then use OutputPath value
@@ -235,7 +235,7 @@ namespace Bridge.Translator
 
             if (!Path.IsPathRooted(fullPath))
             {
-                fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Location), fullPath));
+                fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(this.Location), fullPath));
             }
 
             fullPath = configHelper.ConvertPath(fullPath);
@@ -246,8 +246,7 @@ namespace Bridge.Translator
         private string ReadProperty(XDocument doc, string name, bool safe, Contract.ConfigHelper configHelper)
         {
             var nodes = from n in doc.Descendants()
-                        where string.Compare(n.Name.LocalName, name, true) == 0 &&
-                              EvaluateCondition(n.Parent.Attribute("Condition")?.Value)
+                        where String.Compare(n.Name.LocalName, name, StringComparison.InvariantCultureIgnoreCase) == 0 && this.EvaluateCondition(n.Parent.Attribute("Condition")?.Value)
                         select n;
 
             if (nodes.Count() != 1)
@@ -257,10 +256,10 @@ namespace Bridge.Translator
                     return null;
                 }
 
-                Bridge.Translator.TranslatorException.Throw(
+                TranslatorException.Throw(
                     "Unable to determine "
                     + name
-                    + " in the project file with conditions " + EvaluationConditionsAsString());
+                    + " in the project file with conditions " + this.EvaluationConditionsAsString());
             }
 
             var value = nodes.First().Value;
@@ -288,7 +287,7 @@ namespace Bridge.Translator
 
         private string EvaluationConditionsAsString()
         {
-            var conditions = string.Join(", ", GetEvaluationConditions().Select(x => x.Key + ": " + x.Value));
+            var conditions = string.Join(", ", this.GetEvaluationConditions().Select(x => x.Key + ": " + x.Value));
 
             return conditions;
         }
@@ -300,26 +299,26 @@ namespace Bridge.Translator
                 return true;
             }
 
-            var properties = GetEvaluationConditions();
+            var properties = this.GetEvaluationConditions();
 
             return MsBuildConditionEvaluator.EvaluateCondition(condition, properties);
         }
 
         public static bool IsRunningOnMono()
         {
-            return System.Type.GetType("Mono.Runtime") != null;
+            return Type.GetType("Mono.Runtime") != null;
         }
 
         protected virtual IList<string> GetSourceFiles(XDocument doc)
         {
             this.Log.Trace("Getting source files by xml...");
 
-            Project project;
             IList<string> sourceFiles = new List<string>();
 
             if (this.Source == null)
             {
-                var isOnMono = Translator.IsRunningOnMono();
+                var isOnMono = IsRunningOnMono();
+                Project project;
                 if (isOnMono)
                 {
                     // Using XmlReader here addresses a Mono issue logged as #38224 at Mono's official BugZilla.
@@ -355,14 +354,14 @@ namespace Bridge.Translator
 
                 if (!sourceFiles.Any())
                 {
-                    throw new Bridge.Translator.TranslatorException("Unable to get source file list from project file '" +
+                    throw new TranslatorException("Unable to get source file list from project file '" +
                         this.Location + "'. In order to use bridge, you have to have at least one source code file " +
                         "with the 'compile' property set (usually .cs files have it by default in C# projects).");
                 };
             }
             else
             {
-                sourceFiles = GetSourceFiles(Path.GetDirectoryName(this.Location));
+                sourceFiles = this.GetSourceFiles(Path.GetDirectoryName(this.Location));
             }
 
             this.Log.Trace("Getting source files by xml done");
@@ -374,9 +373,9 @@ namespace Bridge.Translator
         {
             this.Log.Trace("EnsureDefineConstants...");
 
-            if (AssemblyInfo.DefineConstants == null)
+            if (this.AssemblyInfo.DefineConstants == null)
             {
-                AssemblyInfo.DefineConstants = new List<string>();
+                this.AssemblyInfo.DefineConstants = new List<string>();
             }
 
             if (this.ProjectProperties.DefineConstants == null && this.ShouldReadProjectFile)
@@ -391,36 +390,36 @@ namespace Bridge.Translator
                     }
 
                     var attr = n.Attribute("Condition");
-                    return attr == null || EvaluateCondition(attr.Value);
+                    return attr == null || this.EvaluateCondition(attr.Value);
                 });
 
                 this.ProjectProperties.DefineConstants = "";
 
                 foreach (var node in nodeList)
                 {
-                    var constants = from n in node.Descendants()
+                    var constants = string.Join(";", from n in node.Descendants()
                                     where n.Name.LocalName == ProjectPropertyNames.DEFINE_CONSTANTS_PROP
-                                    select n.Value;
+                                    select n.Value);
 
-                    if (constants.Count() > 0)
+                    if (!string.IsNullOrEmpty(constants))
                     {
                         if (this.ProjectProperties.DefineConstants.Length > 0)
                         {
                             this.ProjectProperties.DefineConstants += ";";
                         }
 
-                        this.ProjectProperties.DefineConstants += string.Join(";", constants);
+                        this.ProjectProperties.DefineConstants += constants;
                     }
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(this.ProjectProperties.DefineConstants))
             {
-                AssemblyInfo.DefineConstants.AddRange(
+                this.AssemblyInfo.DefineConstants.AddRange(
                     this.ProjectProperties.DefineConstants.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()));
             }
-            AssemblyInfo.DefineConstants.Add("BRIDGE");
-            AssemblyInfo.DefineConstants = AssemblyInfo.DefineConstants.Distinct().ToList();
+            this.AssemblyInfo.DefineConstants.Add("BRIDGE");
+            this.AssemblyInfo.DefineConstants = this.AssemblyInfo.DefineConstants.Distinct().ToList();
 
             this.Log.Trace("EnsureDefineConstants done");
         }
@@ -429,19 +428,19 @@ namespace Bridge.Translator
         {
             if (this.ProjectProperties.AssemblyName == null && this.ShouldReadProjectFile)
             {
-                var nodes = from n in doc.Descendants()
+                var node = (from n in doc.Descendants()
                             where n.Name.LocalName == ProjectPropertyNames.ASSEMBLY_NAME_PROP
-                            select n;
+                            select n).FirstOrDefault();
 
-                if (nodes.Count() == 1)
+                if (node != null)
                 {
-                    this.ProjectProperties.AssemblyName = nodes.First().Value;
+                    this.ProjectProperties.AssemblyName = node.Value;
                 }
             }
 
             if (string.IsNullOrWhiteSpace(this.ProjectProperties.AssemblyName))
             {
-                Bridge.Translator.TranslatorException.Throw("Unable to determine assembly name");
+                TranslatorException.Throw("Unable to determine assembly name");
             }
         }
 
@@ -449,13 +448,13 @@ namespace Bridge.Translator
         {
             if (this.ProjectProperties.RootNamespace == null && this.ShouldReadProjectFile)
             {
-                var nodes = from n in doc.Descendants()
+                var node = (from n in doc.Descendants()
                             where n.Name.LocalName == ProjectPropertyNames.ROOT_NAMESPACE_PROP
-                            select n;
+                            select n).FirstOrDefault();
 
-                if (nodes.Count() == 1)
+                if (node != null)
                 {
-                    this.ProjectProperties.RootNamespace = nodes.First().Value;
+                    this.ProjectProperties.RootNamespace = node.Value;
                 }
             }
 
@@ -463,7 +462,7 @@ namespace Bridge.Translator
 
             if (string.IsNullOrWhiteSpace(this.DefaultNamespace))
             {
-                this.DefaultNamespace = Translator.DefaultRootNamespace;
+                this.DefaultNamespace = DefaultRootNamespace;
             }
 
             this.Log.Trace("DefaultNamespace:" + this.DefaultNamespace);
@@ -485,11 +484,11 @@ namespace Bridge.Translator
 
             foreach (var part in parts)
             {
-                int index = part.LastIndexOf(System.IO.Path.DirectorySeparatorChar);
+                int index = part.LastIndexOf(Path.DirectorySeparatorChar);
                 string folder = index > -1 ? Path.Combine(location, part.Substring(0, index + 1)) : location;
                 string mask = index > -1 ? part.Substring(index + 1) : part;
 
-                string[] allfiles = System.IO.Directory.GetFiles(folder, mask, searchOption);
+                string[] allfiles = Directory.GetFiles(folder, mask, searchOption);
                 result.AddRange(allfiles);
             }
 

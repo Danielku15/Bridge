@@ -39,7 +39,7 @@ namespace Bridge.Translator
         {
             ObjectCreateExpression objectCreateExpression = this.ObjectCreateExpression;
 
-            var resolveResult = this.Emitter.Resolver.ResolveNode(objectCreateExpression.Type, this.Emitter) as TypeResolveResult;
+            var resolveResult = this.Emitter.Resolver.ResolveNode(objectCreateExpression.Type) as TypeResolveResult;
 
             if (resolveResult != null && resolveResult.Type.Kind == TypeKind.Enum)
             {
@@ -48,7 +48,7 @@ namespace Bridge.Translator
             }
 
             bool isTypeParam = resolveResult != null && resolveResult.Type.Kind == TypeKind.TypeParameter;
-            var invocationResolveResult = this.Emitter.Resolver.ResolveNode(objectCreateExpression, this.Emitter) as InvocationResolveResult;
+            var invocationResolveResult = this.Emitter.Resolver.ResolveNode(objectCreateExpression) as InvocationResolveResult;
             var hasInitializer = !objectCreateExpression.Initializer.IsNull && objectCreateExpression.Initializer.Elements.Count > 0;
 
             if (isTypeParam && invocationResolveResult != null && invocationResolveResult.Member.Parameters.Count == 0 && !hasInitializer)
@@ -156,13 +156,13 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var ctorMember = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(objectCreateExpression, this.Emitter)).Member;
+                    var ctorMember = ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(objectCreateExpression)).Member;
                     var expandParams = ctorMember.ExpandParams();
                     bool applyCtor = false;
 
                     if (expandParams)
                     {
-                        var ctor_rr = this.Emitter.Resolver.ResolveNode(paramsArg, this.Emitter);
+                        var ctor_rr = this.Emitter.Resolver.ResolveNode(paramsArg);
 
                         if (ctor_rr.Type.Kind == TypeKind.Array && !(paramsArg is ArrayCreateExpression) && objectCreateExpression.Arguments.Last() == paramsArg)
                         {
@@ -178,7 +178,7 @@ namespace Bridge.Translator
                             this.WriteNew();
                         }
 
-                        var typerr = this.Emitter.Resolver.ResolveNode(objectCreateExpression.Type, this.Emitter).Type;
+                        var typerr = this.Emitter.Resolver.ResolveNode(objectCreateExpression.Type).Type;
                         var td = typerr.GetDefinition();
                         var isGeneric = typerr.TypeArguments.Count > 0 && !typerr.IsIgnoreGeneric() || td != null && td.IsVirtual();
 
@@ -203,7 +203,7 @@ namespace Bridge.Translator
                     if (!isTypeParam && !type.IsExternal() && type.Methods.Count(m => m.IsConstructor && !m.IsDefaultStructConstructor() && !m.IsStatic) > (type.IsValueType() || isObjectLiteral ? 0 : 1))
                     {
                         this.WriteDot();
-                        var name = OverloadsCollection.Create(this.Emitter, ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(objectCreateExpression, this.Emitter)).Member).GetOverloadName();
+                        var name = OverloadsCollection.Create(this.Emitter, ((InvocationResolveResult)this.Emitter.Resolver.ResolveNode(objectCreateExpression)).Member).GetOverloadName();
                         this.Write(name);
                     }
 
@@ -246,7 +246,7 @@ namespace Bridge.Translator
 
         private void WriteInitializerExpression(Expression item, string tempVar)
         {
-            var rr = this.Emitter.Resolver.ResolveNode(item, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(item) as MemberResolveResult;
 
             var inlineCode = ObjectCreateBlock.GetInlineInit(item, this, tempVar);
 
@@ -320,7 +320,7 @@ namespace Bridge.Translator
                 expr = namedArgumentExpression.Expression;
             }
 
-            var rr = block.Emitter.Resolver.ResolveNode(item, block.Emitter);
+            var rr = block.Emitter.Resolver.ResolveNode(item);
             string inlineCode = null;
             if (expr != null && rr is MemberResolveResult)
             {
@@ -463,7 +463,7 @@ namespace Bridge.Translator
                     NamedArgumentExpression namedArgumentExpression = item as NamedArgumentExpression;
                     string name = namedExression != null ? namedExression.Name : namedArgumentExpression.Name;
 
-                    var itemrr = this.Emitter.Resolver.ResolveNode(item, this.Emitter) as MemberResolveResult;
+                    var itemrr = this.Emitter.Resolver.ResolveNode(item) as MemberResolveResult;
                     if (itemrr != null)
                     {
                         var oc = OverloadsCollection.Create(this.Emitter, itemrr.Member);
@@ -491,8 +491,7 @@ namespace Bridge.Translator
 
             if (isObjectLiteral)
             {
-                var key = BridgeTypes.GetTypeDefinitionKey(type);
-                var tinfo = this.Emitter.Types.FirstOrDefault(t => t.Key == key);
+                var tinfo = this.Emitter.Translator.Types.Get(type);
 
                 var mode = 0;
                 if (rr != null)
@@ -599,7 +598,7 @@ namespace Bridge.Translator
 
                             if (mode == 2 && (member.Initializer == null || member.Initializer.IsNull) && !(member.VarInitializer == null || member.VarInitializer.Initializer.IsNull))
                             {
-                                var argType = this.Emitter.Resolver.ResolveNode(member.VarInitializer, this.Emitter).Type;
+                                var argType = this.Emitter.Resolver.ResolveNode(member.VarInitializer).Type;
                                 var defValue = Inspector.GetDefaultFieldValue(argType, null);
                                 if (defValue == argType)
                                 {

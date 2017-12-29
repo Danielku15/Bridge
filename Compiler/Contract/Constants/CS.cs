@@ -66,6 +66,8 @@
             public const string IMMUTABLE = Bridge.DOTNAME + "ImmutableAttribute";
             public const string FIELD = Bridge.DOTNAME + "FieldAttribute";
             public const string COMPILER_EXTENSION = Bridge.DOTNAME + "CompilerExtensionAttribute";
+            public const string OUTPUT = Bridge.DOTNAME + "OutputAttribute";
+            public const string OUTPUT_BY = Bridge.DOTNAME + "OutputByAttribute";
             
         }
 
@@ -98,6 +100,7 @@
 
             public const string Bridge_ObjectCreateMode = Bridge.DOTNAME + "ObjectCreateMode";
             public const string Bridge_ObjectInitializationMode = Bridge.DOTNAME + "ObjectInitializationMode";
+            public const string Bridge_TypeAccessibility = Bridge.DOTNAME + "TypeAccessibility";
 
         }
 

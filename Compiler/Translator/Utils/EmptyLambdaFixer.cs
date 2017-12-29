@@ -80,10 +80,6 @@ namespace Bridge.Translator
 
     public class EmptyLambdaFixer : DepthFirstAstVisitor<AstNode>
     {
-        public EmptyLambdaFixer()
-        {
-        }
-
         protected override AstNode VisitChildren(AstNode node)
         {
             List<AstNode> newChildren = null;

@@ -9,19 +9,17 @@ namespace Bridge.Translator
     {
         private class Analyzer : CSharpSyntaxWalker
         {
-            private readonly SemanticModel _semanticModel;
             public HashSet<AwaitExpressionSyntax> Awaiters { get; }
             
-            public Analyzer(SemanticModel semanticModel)
+            public Analyzer()
             {
-                _semanticModel = semanticModel;
                 this.Awaiters = new HashSet<AwaitExpressionSyntax>();
             }
 
             public void Analyze(SyntaxNode node)
             {
                 this.Awaiters.Clear();
-                Visit(node);
+                this.Visit(node);
             }
 
             public override void VisitAwaitExpression(AwaitExpressionSyntax node)
@@ -33,7 +31,7 @@ namespace Bridge.Translator
 
         public static bool HasAwaiters(SemanticModel semanticModel, SyntaxNode node)
         {
-            var analyzer = new Analyzer(semanticModel);
+            var analyzer = new Analyzer();
             analyzer.Analyze(node);
             return analyzer.Awaiters.Count > 0;
         }

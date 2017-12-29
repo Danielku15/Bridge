@@ -16,16 +16,11 @@ namespace Bridge.Translator
             set;
         }
 
+        public ILogger Log => this.Translator.Log;
+
         public EmitterCache Cache
         {
             get;
-            private set;
-        }
-
-        public List<ITypeInfo> Types
-        {
-            get;
-            set;
         }
 
         public bool IsAssignment
@@ -82,16 +77,13 @@ namespace Bridge.Translator
             set;
         }
 
-        public int initialLevel;
+        private int _initialLevel;
         public int InitialLevel
         {
-            get
-            {
-                return initialLevel;
-            }
+            get => this._initialLevel;
             set
             {
-                this.initialLevel = value;
+                this._initialLevel = value;
                 this.ResetLevel();
             }
         }
@@ -100,12 +92,12 @@ namespace Bridge.Translator
         {
             if (!level.HasValue)
             {
-                level = InitialLevel;
+                level = this.InitialLevel;
             }
 
-            if (level < InitialLevel && !this.InitPosition.HasValue )
+            if (level < this.InitialLevel && !this.InitPosition.HasValue )
             {
-                level = InitialLevel;
+                level = this.InitialLevel;
             }
 
             if (level < 0)
@@ -172,63 +164,9 @@ namespace Bridge.Translator
             set;
         }
 
-        public virtual IEnumerable<AssemblyDefinition> References
-        {
-            get;
-            set;
-        }
+        public IMemberResolver Resolver => this.Translator.Resolver;
 
-        public virtual IList<string> SourceFiles
-        {
-            get;
-            set;
-        }
-
-        internal static List<IAssemblyReference> ToAssemblyReferences(IEnumerable<AssemblyDefinition> references, ILogger logger)
-        {
-            logger.Info("Assembly definition to references...");
-
-            var list = new List<IAssemblyReference>();
-
-            if (references == null)
-            {
-                return list;
-            }
-
-            foreach (var reference in references)
-            {
-                logger.Trace("\tLoading AssemblyDefinition " + (reference != null && reference.Name != null && reference.Name.Name != null ? reference.Name.Name : "") + " ...");
-
-                var loader = new CecilLoader();
-                loader.IncludeInternalMembers = true;
-
-                list.Add(loader.LoadAssembly(reference));
-
-                logger.Trace("\tLoading AssemblyDefinition done");
-            }
-
-            logger.Info("Assembly definition to references done");
-
-            return list;
-        }
-
-        public IMemberResolver Resolver
-        {
-            get;
-            set;
-        }
-
-        public IAssemblyInfo AssemblyInfo
-        {
-            get;
-            set;
-        }
-
-        public Dictionary<string, ITypeInfo> TypeInfoDefinitions
-        {
-            get;
-            set;
-        }
+        public IAssemblyInfo AssemblyInfo => this.Translator.AssemblyInfo;
 
         public List<IPluginDependency> CurrentDependencies
         {
@@ -249,18 +187,6 @@ namespace Bridge.Translator
         }
 
         public bool SkipSemiColon
-        {
-            get;
-            set;
-        }
-
-        public IEnumerable<IMethod> MethodsGroup
-        {
-            get;
-            set;
-        }
-
-        public Dictionary<int, StringBuilder> MethodsGroupBuilder
         {
             get;
             set;
@@ -338,12 +264,6 @@ namespace Bridge.Translator
             set;
         }
 
-        public IPlugins Plugins
-        {
-            get;
-            set;
-        }
-
         public Dictionary<string, bool> TempVariables
         {
             get;
@@ -357,12 +277,6 @@ namespace Bridge.Translator
         }
 
         public Dictionary<string, bool> ParentTempVariables
-        {
-            get;
-            set;
-        }
-
-        public BridgeTypes BridgeTypes
         {
             get;
             set;
@@ -416,13 +330,8 @@ namespace Bridge.Translator
             set;
         }
 
-        public bool IsJavaScriptOverflowMode
-        {
-            get
-            {
-                return this.AssemblyInfo.OverflowMode.HasValue && this.AssemblyInfo.OverflowMode == OverflowMode.Javascript;
-            }
-        }
+        public bool IsJavaScriptOverflowMode 
+            => this.AssemblyInfo.OverflowMode.HasValue && this.AssemblyInfo.OverflowMode == OverflowMode.Javascript;
 
         public bool IsRefArg
         {
@@ -452,7 +361,7 @@ namespace Bridge.Translator
             get; set;
         }
 
-        public IType[] ReflectableTypes
+        public ITypeInfo[] ReflectableTypes
         {
             get; set;
         }

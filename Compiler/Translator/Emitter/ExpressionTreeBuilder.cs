@@ -20,18 +20,18 @@ namespace Bridge.Translator
         private readonly ICompilation _compilation;
         private readonly ITypeDefinition _expression;
         private readonly Dictionary<IVariable, string> _allParameters;
-        private SyntaxTree _syntaxTree;
-        private IEmitter _emitter;
-        private AbstractEmitterBlock _block;
+        private readonly SyntaxTree _syntaxTree;
+        private readonly IEmitter _emitter;
+        private readonly AbstractEmitterBlock _block;
 
         public ExpressionTreeBuilder(ICompilation compilation, IEmitter emitter, SyntaxTree syntaxTree, AbstractEmitterBlock block)
         {
-            _compilation = compilation;
-            _emitter = emitter;
-            _syntaxTree = syntaxTree;
-            _expression = (ITypeDefinition)ReflectionHelper.ParseReflectionName(typeof(System.Linq.Expressions.Expression).FullName).Resolve(compilation);
-            _allParameters = new Dictionary<IVariable, string>();
-            _block = block;
+            this._compilation = compilation;
+            this._emitter = emitter;
+            this._syntaxTree = syntaxTree;
+            this._expression = (ITypeDefinition)ReflectionHelper.ParseReflectionName(typeof(Expression).FullName).Resolve(compilation);
+            this._allParameters = new Dictionary<IVariable, string>();
+            this._block = block;
         }
 
         private bool TypesMatch(IMethod method, Type[] argumentTypes)
@@ -40,7 +40,7 @@ namespace Bridge.Translator
                 return false;
             for (int i = 0; i < argumentTypes.Length; i++)
             {
-                if (!method.Parameters[i].Type.Equals(ReflectionHelper.ParseReflectionName(argumentTypes[i].FullName).Resolve(_compilation)))
+                if (!method.Parameters[i].Type.Equals(ReflectionHelper.ParseReflectionName(argumentTypes[i].FullName).Resolve(this._compilation)))
                     return false;
             }
             return true;
@@ -62,8 +62,8 @@ namespace Bridge.Translator
 
         private string CompileFactoryCall(string factoryMethodName, Type[] argumentTypes, string[] arguments)
         {
-            var method = _expression.Methods.Single(m => m.Name == factoryMethodName && m.TypeParameters.Count == 0 && TypesMatch(m, argumentTypes));
-            return CompileMethodCall(method, arguments);
+            var method = this._expression.Methods.Single(m => m.Name == factoryMethodName && m.TypeParameters.Count == 0 && this.TypesMatch(m, argumentTypes));
+            return this.CompileMethodCall(method, arguments);
         }
 
         public string BuildExpressionTree(LambdaResolveResult lambda)
@@ -89,14 +89,14 @@ namespace Bridge.Translator
             for (int i = 0; i < rr.Parameters.Count; i++)
             {
                 var temp = this._block.GetTempVarName();
-                _allParameters[rr.Parameters[i]] = temp;
+                this._allParameters[rr.Parameters[i]] = temp;
                 parameters[i] = new JRaw(temp);
 
-                map.Add(temp, CompileFactoryCall("Parameter", new[] { typeof(Type), typeof(string) }, new[] { ExpressionTreeBuilder.GetTypeName(rr.Parameters[i].Type, this._emitter), this._emitter.ToJavaScript(rr.Parameters[i].Name) }));
+                map.Add(temp, this.CompileFactoryCall("Parameter", new[] { typeof(Type), typeof(string) }, new[] { GetTypeName(rr.Parameters[i].Type, this._emitter), rr.Parameters[i].Name.ToJavaScript() }));
             }
 
-            var body = VisitResolveResult(rr.Body, null);
-            var lambda = CompileFactoryCall("Lambda", new[] { typeof(Expression), typeof(ParameterExpression[]) }, new[] { body, this._emitter.ToJavaScript(parameters) });
+            var body = this.VisitResolveResult(rr.Body, null);
+            var lambda = this.CompileFactoryCall("Lambda", new[] { typeof(Expression), typeof(ParameterExpression[]) }, new[] { body, parameters.ToJavaScript() });
 
             if (map.Count > 0)
             {
@@ -123,7 +123,7 @@ namespace Bridge.Translator
 
         public string GetExpressionForLocal(string name, string accessor, IType type)
         {
-            var scriptType = ExpressionTreeBuilder.GetTypeName(type, this._emitter);
+            var scriptType = GetTypeName(type, this._emitter);
 
             string getterDefinition = "function (){ return " + accessor + "}";
             string setterDefinition = "function ($){ " + accessor + " = $; }";
@@ -134,38 +134,48 @@ namespace Bridge.Translator
                 setterDefinition = JsExpression.Invocation(JsExpression.Member(setterDefinition, "bind"), JsExpression.This);
             }*/
 
-            var obj = new JObject();
-            obj["ntype"] = (int)ExpressionType.MemberAccess;
-            obj["t"] = new JRaw(scriptType);
+            var obj = new JObject
+            {
+                ["ntype"] = (int)ExpressionType.MemberAccess,
+                ["t"] = new JRaw(scriptType)
+            };
 
-            var expression = new JObject();
-            expression["ntype"] = (int)ExpressionType.Constant;
-            expression["t"] = new JRaw(scriptType);
-            expression["value"] = new JObject();
+            var expression = new JObject
+            {
+                ["ntype"] = (int)ExpressionType.Constant,
+                ["t"] = new JRaw(scriptType),
+                ["value"] = new JObject()
+            };
             obj["expression"] = expression;
 
-            var member = new JObject();
-            member["td"] = new JRaw("System.Object");
-            member["n"] = name;
-            member["t"] = (int)MemberTypes.Property;
-            member["rt"] = new JRaw(scriptType);
+            var member = new JObject
+            {
+                ["td"] = new JRaw("System.Object"),
+                ["n"] = name,
+                ["t"] = (int)MemberTypes.Property,
+                ["rt"] = new JRaw(scriptType)
+            };
 
-            var getter = new JObject();
-            getter["td"] = new JRaw("System.Object");
-            getter["n"] = "get" + name;
-            getter["t"] = (int)MemberTypes.Method;
-            getter["rt"] = new JRaw(scriptType);
-            getter["p"] = new JRaw("[]");
-            getter["def"] = new JRaw(getterDefinition);
+            var getter = new JObject
+            {
+                ["td"] = new JRaw("System.Object"),
+                ["n"] = "get" + name,
+                ["t"] = (int)MemberTypes.Method,
+                ["rt"] = new JRaw(scriptType),
+                ["p"] = new JRaw("[]"),
+                ["def"] = new JRaw(getterDefinition)
+            };
             member["g"] = getter;
 
-            var setter = new JObject();
-            setter["td"] = new JRaw("System.Object");
-            setter["n"] = "set" + name;
-            setter["t"] = (int)MemberTypes.Method;
-            setter["rt"] = new JRaw("System.Object");
-            setter["p"] = new JRaw("[" + scriptType + "]");
-            setter["def"] = new JRaw(setterDefinition);
+            var setter = new JObject
+            {
+                ["td"] = new JRaw("System.Object"),
+                ["n"] = "set" + name,
+                ["t"] = (int)MemberTypes.Method,
+                ["rt"] = new JRaw("System.Object"),
+                ["p"] = new JRaw("[" + scriptType + "]"),
+                ["def"] = new JRaw(setterDefinition)
+            };
             member["s"] = setter;
 
             obj["member"] = member;
@@ -175,8 +185,7 @@ namespace Bridge.Translator
 
         public override string VisitLocalResolveResult(LocalResolveResult rr, object data)
         {
-            string name;
-            if (_allParameters.TryGetValue(rr.Variable, out name))
+            if (this._allParameters.TryGetValue(rr.Variable, out var name))
             {
                 return name;
             }
@@ -191,7 +200,7 @@ namespace Bridge.Translator
                 id = this._emitter.LocalsMap[rr.Variable];
             }
 
-            return GetExpressionForLocal(rr.Variable.Name, id, rr.Variable.Type);
+            return this.GetExpressionForLocal(rr.Variable.Name, id, rr.Variable.Type);
         }
 
         public override string VisitOperatorResolveResult(OperatorResolveResult rr, object data)
@@ -199,19 +208,19 @@ namespace Bridge.Translator
             bool isUserDefined = rr.UserDefinedOperatorMethod != null && !rr.UserDefinedOperatorMethod.DeclaringTypeDefinition.IsExternal();
             var arguments = new string[rr.Operands.Count + 1];
             for (int i = 0; i < rr.Operands.Count; i++)
-                arguments[i] = VisitResolveResult(rr.Operands[i], null);
-            arguments[arguments.Length - 1] = isUserDefined ? this.GetMember(rr.UserDefinedOperatorMethod) : ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter);
+                arguments[i] = this.VisitResolveResult(rr.Operands[i], null);
+            arguments[arguments.Length - 1] = isUserDefined ? this.GetMember(rr.UserDefinedOperatorMethod) : GetTypeName(rr.Type, this._emitter);
             if (rr.OperatorType == ExpressionType.Conditional)
-                return CompileFactoryCall("Condition", new[] { typeof(Expression), typeof(Expression), typeof(Expression), typeof(Type) }, arguments);
+                return this.CompileFactoryCall("Condition", new[] { typeof(Expression), typeof(Expression), typeof(Expression), typeof(Type) }, arguments);
             else
             {
-                return CompileFactoryCall(rr.OperatorType.ToString(), rr.Operands.Count == 1 ? new[] { typeof(Expression), isUserDefined ? typeof(MethodInfo) : typeof(Type) } : new[] { typeof(Expression), typeof(Expression), isUserDefined ? typeof(MethodInfo) : typeof(Type) }, arguments);
+                return this.CompileFactoryCall(rr.OperatorType.ToString(), rr.Operands.Count == 1 ? new[] { typeof(Expression), isUserDefined ? typeof(MethodInfo) : typeof(Type) } : new[] { typeof(Expression), typeof(Expression), isUserDefined ? typeof(MethodInfo) : typeof(Type) }, arguments);
             }
         }
 
         public override string VisitConversionResolveResult(ConversionResolveResult rr, object data)
         {
-            var input = VisitResolveResult(rr.Input, null);
+            var input = this.VisitResolveResult(rr.Input, null);
             if (rr.Conversion.IsIdentityConversion)
             {
                 return input;
@@ -220,26 +229,26 @@ namespace Bridge.Translator
             {
                 var result = input;
                 if (rr.Type.Name == "Expression")
-                    result = CompileFactoryCall("Quote", new[] { typeof(Expression) }, new[] { result });
+                    result = this.CompileFactoryCall("Quote", new[] { typeof(Expression) }, new[] { result });
                 return result;
             }
             else if (rr.Conversion.IsNullLiteralConversion)
             {
-                return CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { input, ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter) });
+                return this.CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { input, GetTypeName(rr.Type, this._emitter) });
             }
             else if (rr.Conversion.IsMethodGroupConversion)
             {
-                var methodInfo = _compilation.FindType(typeof(MethodInfo));
-                return CompileFactoryCall("Convert", new[] { typeof(Expression), typeof(Type) }, new[] {
-                           CompileFactoryCall("Call", new[] { typeof(Expression), typeof(MethodInfo), typeof(Expression[]) }, new[] {
-                               CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { this.GetMember(rr.Conversion.Method), ExpressionTreeBuilder.GetTypeName(methodInfo, this._emitter) }),
+                var methodInfo = this._compilation.FindType(typeof(MethodInfo));
+                return this.CompileFactoryCall("Convert", new[] { typeof(Expression), typeof(Type) }, new[] {
+                    this.CompileFactoryCall("Call", new[] { typeof(Expression), typeof(MethodInfo), typeof(Expression[]) }, new[] {
+                        this.CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { this.GetMember(rr.Conversion.Method), GetTypeName(methodInfo, this._emitter) }),
                                this.GetMember(methodInfo.GetMethods().Single(m => m.Name == "CreateDelegate" && m.Parameters.Count == 2 && m.Parameters[0].Type.FullName == typeof(Type).FullName && m.Parameters[1].Type.FullName == typeof(object).FullName)),
-                               this._emitter.ToJavaScript(new [] {
-                                   new JRaw(ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter)),
-                                   new JRaw(rr.Conversion.Method.IsStatic ? "null" : VisitResolveResult(((MethodGroupResolveResult)rr.Input).TargetResult, null))
-                               })
+                               new [] {
+                                   new JRaw(GetTypeName(rr.Type, this._emitter)),
+                                   new JRaw(rr.Conversion.Method.IsStatic ? "null" : this.VisitResolveResult(((MethodGroupResolveResult)rr.Input).TargetResult, null))
+                               }.ToJavaScript()
                            }),
-                           ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter)
+                           GetTypeName(rr.Type, this._emitter)
                        });
             }
             else
@@ -252,27 +261,27 @@ namespace Bridge.Translator
                 else
                     methodName = "Convert";
                 if (rr.Conversion.IsUserDefined)
-                    return CompileFactoryCall(methodName, new[] { typeof(Expression), typeof(Type), typeof(MethodInfo) }, new[] { input, ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter), this.GetMember(rr.Conversion.Method) });
+                    return this.CompileFactoryCall(methodName, new[] { typeof(Expression), typeof(Type), typeof(MethodInfo) }, new[] { input, GetTypeName(rr.Type, this._emitter), this.GetMember(rr.Conversion.Method) });
                 else
-                    return CompileFactoryCall(methodName, new[] { typeof(Expression), typeof(Type) }, new[] { input, ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter) });
+                    return this.CompileFactoryCall(methodName, new[] { typeof(Expression), typeof(Type) }, new[] { input, GetTypeName(rr.Type, this._emitter) });
             }
         }
 
         public override string VisitTypeIsResolveResult(TypeIsResolveResult rr, object data)
         {
-            return CompileFactoryCall("TypeIs", new[] { typeof(Expression), typeof(Type) }, new[] { VisitResolveResult(rr.Input, null), ExpressionTreeBuilder.GetTypeName(rr.TargetType, this._emitter) });
+            return this.CompileFactoryCall("TypeIs", new[] { typeof(Expression), typeof(Type) }, new[] { this.VisitResolveResult(rr.Input, null), GetTypeName(rr.TargetType, this._emitter) });
         }
 
         public override string VisitMemberResolveResult(MemberResolveResult rr, object data)
         {
-            var instance = rr.Member.IsStatic ? "null" : VisitResolveResult(rr.TargetResult, null);
+            var instance = rr.Member.IsStatic ? "null" : this.VisitResolveResult(rr.TargetResult, null);
             if (rr.TargetResult.Type.Kind == TypeKind.Array && rr.Member.Name == "Length")
-                return CompileFactoryCall("ArrayLength", new[] { typeof(Expression) }, new[] { instance });
+                return this.CompileFactoryCall("ArrayLength", new[] { typeof(Expression) }, new[] { instance });
 
             if (rr.Member is IProperty)
-                return CompileFactoryCall("Property", new[] { typeof(Expression), typeof(PropertyInfo) }, new[] { instance, this.GetMember(rr.Member) });
+                return this.CompileFactoryCall("Property", new[] { typeof(Expression), typeof(PropertyInfo) }, new[] { instance, this.GetMember(rr.Member) });
             if (rr.Member is IField)
-                return CompileFactoryCall("Field", new[] { typeof(Expression), typeof(FieldInfo) }, new[] { instance, this.GetMember(rr.Member) });
+                return this.CompileFactoryCall("Field", new[] { typeof(Expression), typeof(FieldInfo) }, new[] { instance, this.GetMember(rr.Member) });
             else
                 throw new ArgumentException("Unsupported member " + rr + " in expression tree");
         }
@@ -297,14 +306,14 @@ namespace Bridge.Translator
                     var orr = init as OperatorResolveResult;
                     if (orr.OperatorType != ExpressionType.Assign)
                         throw new InvalidOperationException("Invalid initializer " + init);
-                    result.Add(Tuple.Create(GetMemberPath(orr.Operands[0]), (IList<ResolveResult>)new[] { orr.Operands[1] }, (IMethod)null));
+                    result.Add(Tuple.Create(this.GetMemberPath(orr.Operands[0]), (IList<ResolveResult>)new[] { orr.Operands[1] }, (IMethod)null));
                 }
                 else if (init is InvocationResolveResult)
                 {
                     var irr = init as InvocationResolveResult;
                     if (irr.Member.Name != "Add")
                         throw new InvalidOperationException("Invalid initializer " + init);
-                    result.Add(Tuple.Create(GetMemberPath(irr.TargetResult), irr.GetArgumentsForCall(), (IMethod)irr.Member));
+                    result.Add(Tuple.Create(this.GetMemberPath(irr.TargetResult), irr.GetArgumentsForCall(), (IMethod)irr.Member));
                 }
                 else
                     throw new InvalidOperationException("Invalid initializer " + init);
@@ -334,8 +343,8 @@ namespace Bridge.Translator
                 var currentTarget = initializers.Current.Item1[index];
                 if (initializers.Current.Item1.Count > index + 1)
                 {
-                    var innerBindings = GenerateMemberBindings(initializers, index + 1);
-                    result.Add(new JRaw(CompileFactoryCall("MemberBind", new[] { typeof(MemberInfo), typeof(MemberBinding[]) }, new[] { this.GetMember(currentTarget), this._emitter.ToJavaScript(innerBindings.Item1) })));
+                    var innerBindings = this.GenerateMemberBindings(initializers, index + 1);
+                    result.Add(new JRaw(this.CompileFactoryCall("MemberBind", new[] { typeof(MemberInfo), typeof(MemberBinding[]) }, new[] { this.GetMember(currentTarget), innerBindings.Item1.ToJavaScript() })));
 
                     if (!innerBindings.Item2)
                     {
@@ -349,22 +358,22 @@ namespace Bridge.Translator
                     var elements = new List<JRaw>();
                     do
                     {
-                        elements.Add(new JRaw(CompileFactoryCall("ElementInit", new[] { typeof(MethodInfo), typeof(Expression[]) }, new[] { this.GetMember(initializers.Current.Item3), this._emitter.ToJavaScript(initializers.Current.Item2.Select(i => new JRaw(VisitResolveResult(i, null)))) })));
+                        elements.Add(new JRaw(this.CompileFactoryCall("ElementInit", new[] { typeof(MethodInfo), typeof(Expression[]) }, new[] { this.GetMember(initializers.Current.Item3), initializers.Current.Item2.Select(i => new JRaw(this.VisitResolveResult(i, null))).ToJavaScript() })));
                         if (!initializers.MoveNext())
                         {
                             hasMore = false;
                             break;
                         }
-                    } while (FirstNEqual(currentPath, initializers.Current.Item1, index + 1));
+                    } while (this.FirstNEqual(currentPath, initializers.Current.Item1, index + 1));
 
-                    result.Add(new JRaw(CompileFactoryCall("ListBind", new[] { typeof(MemberInfo), typeof(ElementInit[]) }, new[] { this.GetMember(currentTarget), this._emitter.ToJavaScript(elements) })));
+                    result.Add(new JRaw(this.CompileFactoryCall("ListBind", new[] { typeof(MemberInfo), typeof(ElementInit[]) }, new[] { this.GetMember(currentTarget), elements.ToJavaScript() })));
 
                     if (!hasMore)
                         break;
                 }
                 else
                 {
-                    result.Add(new JRaw(CompileFactoryCall("Bind", new[] { typeof(MemberInfo), typeof(Expression) }, new[] { this.GetMember(currentTarget), VisitResolveResult(initializers.Current.Item2[0], null) })));
+                    result.Add(new JRaw(this.CompileFactoryCall("Bind", new[] { typeof(MemberInfo), typeof(Expression) }, new[] { this.GetMember(currentTarget), this.VisitResolveResult(initializers.Current.Item2[0], null) })));
 
                     if (!initializers.MoveNext())
                     {
@@ -372,20 +381,19 @@ namespace Bridge.Translator
                         break;
                     }
                 }
-            } while (FirstNEqual(firstPath, initializers.Current.Item1, index));
+            } while (this.FirstNEqual(firstPath, initializers.Current.Item1, index));
 
             return Tuple.Create(result, hasMore);
         }
 
         public override string VisitCSharpInvocationResolveResult(CSharpInvocationResolveResult rr, object data)
         {
-            return VisitInvocationResolveResult(rr, data);
+            return this.VisitInvocationResolveResult(rr, data);
         }
 
         public override string VisitInvocationResolveResult(InvocationResolveResult rr, object data)
         {
-            var type = rr.Member.DeclaringType as AnonymousType;
-            if (type != null)
+            if (rr.Member.DeclaringType is AnonymousType type)
             {
                 if (!this._emitter.AnonymousTypes.ContainsKey(type))
                 {
@@ -396,7 +404,7 @@ namespace Bridge.Translator
 
             if (rr.Member.DeclaringType.Kind == TypeKind.Delegate && rr.Member.Name == "Invoke")
             {
-                return CompileFactoryCall("Invoke", new[] { typeof(Type), typeof(Expression), typeof(Expression[]) }, new[] { ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter), VisitResolveResult(rr.TargetResult, null), this._emitter.ToJavaScript(rr.GetArgumentsForCall().Select(a => new JRaw(VisitResolveResult(a, null)))) });
+                return this.CompileFactoryCall("Invoke", new[] { typeof(Type), typeof(Expression), typeof(Expression[]) }, new[] { GetTypeName(rr.Type, this._emitter), this.VisitResolveResult(rr.TargetResult, null), rr.GetArgumentsForCall().Select(a => new JRaw(this.VisitResolveResult(a, null))).ToJavaScript() });
             }
             else if (rr.Member is IMethod && ((IMethod)rr.Member).IsConstructor)
             {
@@ -406,39 +414,39 @@ namespace Bridge.Translator
                     var members = new List<JRaw>();
                     foreach (var init in rr.InitializerStatements)
                     {
-                        var assign = init as OperatorResolveResult;
-                        if (assign == null || assign.OperatorType != ExpressionType.Assign || !(assign.Operands[0] is MemberResolveResult) || !(((MemberResolveResult)assign.Operands[0]).Member is IProperty))
+                        if (!(init is OperatorResolveResult assign) || assign.OperatorType != ExpressionType.Assign || !((assign.Operands[0] as MemberResolveResult)?.Member is IProperty))
                             throw new Exception("Invalid anonymous type initializer " + init);
-                        args.Add(new JRaw(VisitResolveResult(assign.Operands[1], null)));
+                        args.Add(new JRaw(this.VisitResolveResult(assign.Operands[1], null)));
                         members.Add(new JRaw(this.GetMember(((MemberResolveResult)assign.Operands[0]).Member)));
                     }
-                    return CompileFactoryCall("New", new[] { typeof(ConstructorInfo), typeof(Expression[]), typeof(MemberInfo[]) }, new[] { this.GetMember(rr.Member), this._emitter.ToJavaScript(args), this._emitter.ToJavaScript(members) });
+                    return this.CompileFactoryCall("New", new[] { typeof(ConstructorInfo), typeof(Expression[]), typeof(MemberInfo[]) }, new[] { this.GetMember(rr.Member), args.ToJavaScript(), members.ToJavaScript() });
                 }
                 else
                 {
-                    var result = CompileFactoryCall("New", new[] { typeof(ConstructorInfo), typeof(Expression[]) }, new[] { this.GetMember(rr.Member), this._emitter.ToJavaScript(rr.GetArgumentsForCall().Select(a => new JRaw(VisitResolveResult(a, null)))) });
+                    var result = this.CompileFactoryCall("New", new[] { typeof(ConstructorInfo), typeof(Expression[]) }, new[] { this.GetMember(rr.Member), rr.GetArgumentsForCall().Select(a => new JRaw(this.VisitResolveResult(a, null))).ToJavaScript() });
                     if (rr.InitializerStatements.Count > 0)
                     {
-                        if (rr.InitializerStatements[0] is InvocationResolveResult && ((InvocationResolveResult)rr.InitializerStatements[0]).TargetResult is InitializedObjectResolveResult)
+                        if (rr.InitializerStatements[0] is InvocationResolveResult invoc && invoc.TargetResult is InitializedObjectResolveResult)
                         {
                             var elements = new List<JRaw>();
                             foreach (var stmt in rr.InitializerStatements)
                             {
-                                var irr = stmt as InvocationResolveResult;
-                                if (irr == null)
+                                if (!(stmt is InvocationResolveResult irr))
+                                {
                                     throw new Exception("Expected list initializer, was " + stmt);
-                                elements.Add(new JRaw(CompileFactoryCall("ElementInit", new[] { typeof(MethodInfo), typeof(Expression[]) }, new[] { this.GetMember(irr.Member), this._emitter.ToJavaScript(irr.Arguments.Select(i => new JRaw(VisitResolveResult(i, null)))) })));
+                                }
+                                elements.Add(new JRaw(this.CompileFactoryCall("ElementInit", new[] { typeof(MethodInfo), typeof(Expression[]) }, new[] { this.GetMember(irr.Member), irr.Arguments.Select(i => new JRaw(this.VisitResolveResult(i, null))).ToJavaScript() })));
                             }
-                            result = CompileFactoryCall("ListInit", new[] { typeof(NewExpression), typeof(ElementInit[]) }, new[] { result, this._emitter.ToJavaScript(elements) });
+                            result = this.CompileFactoryCall("ListInit", new[] { typeof(NewExpression), typeof(ElementInit[]) }, new[] { result, elements.ToJavaScript() });
                         }
                         else
                         {
-                            var map = BuildAssignmentMap(rr.InitializerStatements);
+                            var map = this.BuildAssignmentMap(rr.InitializerStatements);
                             using (IEnumerator<Tuple<List<IMember>, IList<ResolveResult>, IMethod>> enm = map.GetEnumerator())
                             {
                                 enm.MoveNext();
-                                var bindings = GenerateMemberBindings(enm, 0);
-                                result = CompileFactoryCall("MemberInit", new[] { typeof(NewExpression), typeof(MemberBinding[]) }, new[] { result, this._emitter.ToJavaScript(bindings.Item1) });
+                                var bindings = this.GenerateMemberBindings(enm, 0);
+                                result = this.CompileFactoryCall("MemberInit", new[] { typeof(NewExpression), typeof(MemberBinding[]) }, new[] { result, bindings.Item1.ToJavaScript() });
                             }
                         }
                     }
@@ -448,13 +456,13 @@ namespace Bridge.Translator
             else
             {
                 var member = rr.Member is IProperty ? ((IProperty)rr.Member).Getter : rr.Member;    // If invoking a property (indexer), use the get method.
-                return CompileFactoryCall("Call", new[] { typeof(Expression), typeof(MethodInfo), typeof(Expression[]) }, new[] { member.IsStatic ? "null" : VisitResolveResult(rr.TargetResult, null), this.GetMember(member), this._emitter.ToJavaScript(rr.GetArgumentsForCall().Select(a => new JRaw(VisitResolveResult(a, null)))) });
+                return this.CompileFactoryCall("Call", new[] { typeof(Expression), typeof(MethodInfo), typeof(Expression[]) }, new[] { member.IsStatic ? "null" : this.VisitResolveResult(rr.TargetResult, null), this.GetMember(member), rr.GetArgumentsForCall().Select(a => new JRaw(this.VisitResolveResult(a, null))).ToJavaScript() });
             }
         }
 
         public override string VisitTypeOfResolveResult(TypeOfResolveResult rr, object data)
         {
-            return CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { ExpressionTreeBuilder.GetTypeName(rr.ReferencedType, this._emitter), ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter) });
+            return this.CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { GetTypeName(rr.ReferencedType, this._emitter), GetTypeName(rr.Type, this._emitter) });
         }
 
         public override string VisitDefaultResolveResult(ResolveResult rr, object data)
@@ -470,12 +478,12 @@ namespace Bridge.Translator
         private string MakeConstant(ResolveResult rr)
         {
             var value = rr.ConstantValue == null ? DefaultValueBlock.DefaultValue(rr, this._emitter) : AbstractEmitterBlock.ToJavaScript(rr.ConstantValue, this._emitter);
-            return CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { value, ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter) });
+            return this.CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { value, GetTypeName(rr.Type, this._emitter) });
         }
 
         public override string VisitConstantResolveResult(ConstantResolveResult rr, object data)
         {
-            return MakeConstant(rr);
+            return this.MakeConstant(rr);
         }
 
         public override string VisitSizeOfResolveResult(SizeOfResolveResult rr, object data)
@@ -484,16 +492,16 @@ namespace Bridge.Translator
             {
                 throw new Exception("Cannot take the size of type " + rr.ReferencedType.FullName);
             }
-            return MakeConstant(rr);
+            return this.MakeConstant(rr);
         }
 
         public override string VisitArrayAccessResolveResult(ArrayAccessResolveResult rr, object data)
         {
-            var array = VisitResolveResult(rr.Array, null);
+            var array = this.VisitResolveResult(rr.Array, null);
             if (rr.Indexes.Count == 1)
-                return CompileFactoryCall("ArrayIndex", new[] { typeof(Type), typeof(Expression), typeof(Expression) }, new[] { ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter), array, VisitResolveResult(rr.Indexes[0], null) });
+                return this.CompileFactoryCall("ArrayIndex", new[] { typeof(Type), typeof(Expression), typeof(Expression) }, new[] { GetTypeName(rr.Type, this._emitter), array, this.VisitResolveResult(rr.Indexes[0], null) });
             else
-                return CompileFactoryCall("ArrayIndex", new[] { typeof(Type), typeof(Expression), typeof(Expression[]) }, new[] { ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter), array, this._emitter.ToJavaScript(rr.Indexes.Select(i => new JRaw(this.VisitResolveResult(i, null))).ToArray()) });
+                return this.CompileFactoryCall("ArrayIndex", new[] { typeof(Type), typeof(Expression), typeof(Expression[]) }, new[] { GetTypeName(rr.Type, this._emitter), array, rr.Indexes.Select(i => new JRaw(this.VisitResolveResult(i, null))).ToArray().ToJavaScript() });
         }
 
         public override string VisitArrayCreateResolveResult(ArrayCreateResolveResult rr, object data)
@@ -501,15 +509,15 @@ namespace Bridge.Translator
             var arrayType = rr.Type as ArrayType;
             if (rr.InitializerElements != null)
             {
-                return CompileFactoryCall("NewArrayInit", new[] { typeof(Type), typeof(Expression[]) }, new[] { ExpressionTreeBuilder.GetTypeName(arrayType != null ? arrayType.ElementType : rr.Type, this._emitter), this._emitter.ToJavaScript(rr.InitializerElements.Select(e => new JRaw(this.VisitResolveResult(e, null))).ToArray()) });
+                return this.CompileFactoryCall("NewArrayInit", new[] { typeof(Type), typeof(Expression[]) }, new[] { GetTypeName(arrayType != null ? arrayType.ElementType : rr.Type, this._emitter), rr.InitializerElements.Select(e => new JRaw(this.VisitResolveResult(e, null))).ToArray().ToJavaScript() });
             }
 
-            return CompileFactoryCall("NewArrayBounds", new[] { typeof(Type), typeof(Expression[]) }, new[] { ExpressionTreeBuilder.GetTypeName(arrayType != null ? arrayType.ElementType : rr.Type, this._emitter), this._emitter.ToJavaScript(rr.SizeArguments.Select(a => new JRaw(VisitResolveResult(a, null))).ToArray()) });
+            return this.CompileFactoryCall("NewArrayBounds", new[] { typeof(Type), typeof(Expression[]) }, new[] { GetTypeName(arrayType != null ? arrayType.ElementType : rr.Type, this._emitter), rr.SizeArguments.Select(a => new JRaw(this.VisitResolveResult(a, null))).ToArray().ToJavaScript() });
         }
 
         public override string VisitThisResolveResult(ThisResolveResult rr, object data)
         {
-            return CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { AbstractEmitterBlock.GetThisAlias(_emitter), ExpressionTreeBuilder.GetTypeName(rr.Type, this._emitter) });
+            return this.CompileFactoryCall("Constant", new[] { typeof(object), typeof(Type) }, new[] { AbstractEmitterBlock.GetThisAlias(this._emitter), GetTypeName(rr.Type, this._emitter) });
         }
 
         private static string GetTypeName(IType type, IEmitter emitter)
@@ -520,7 +528,7 @@ namespace Bridge.Translator
                 return "Object";
             }*/
 
-            return BridgeTypes.ToJsName(type, emitter);
+            return emitter.ToJsName(type);
         }
 
         private int FindIndexInReflectableMembers(IMember member)
@@ -528,9 +536,9 @@ namespace Bridge.Translator
             var type = member.DeclaringTypeDefinition;
             bool hasAttr = false;
 
-            if (!this._emitter.ReflectableTypes.Any(t => t == type))
+            if (!this._emitter.ReflectableTypes.Any(t => t.Type.Equals(type)))
             {
-                hasAttr = this._emitter.Types.Any(t => t.Type == type);
+                hasAttr = this._emitter.Translator.Types.OutputTypes.Any(t => t.Type.Equals(type));
 
                 if (!hasAttr)
                 {
@@ -556,12 +564,12 @@ namespace Bridge.Translator
 
         public string GetMember(IMember member)
         {
-            var owner = member is IMethod && ((IMethod)member).IsAccessor ? ((IMethod)member).AccessorOwner : null;
+            var owner = (member is IMethod method) && method.IsAccessor ? method.AccessorOwner : null;
 
-            int index = FindIndexInReflectableMembers(owner ?? member);
+            int index = this.FindIndexInReflectableMembers(owner ?? member);
             if (index >= 0)
             {
-                string result = string.Format("Bridge.getMetadata({0}).m[{1}]", ExpressionTreeBuilder.GetTypeName(member.DeclaringType, this._emitter), index);
+                string result = $"Bridge.getMetadata({GetTypeName(member.DeclaringType, this._emitter)}).m[{index}]";
                 if (owner != null)
                 {
                     if (owner is IProperty)

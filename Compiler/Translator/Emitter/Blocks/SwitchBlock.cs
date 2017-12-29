@@ -156,7 +156,7 @@ namespace Bridge.Translator
             bool writeElse = false;
             var thisStep = this.Emitter.AsyncBlock.Steps.Last();
 
-            var rr = this.Emitter.Resolver.ResolveNode(switchStatement.Expression, this.Emitter);
+            var rr = this.Emitter.Resolver.ResolveNode(switchStatement.Expression);
             bool is64Bit = Helpers.Is64Type(rr.Type, this.Emitter.Resolver);
 
             foreach (var switchSection in list)
@@ -317,7 +317,7 @@ namespace Bridge.Translator
 
             this.WriteSwitch();
             this.WriteOpenParentheses();
-            var rr = this.Emitter.Resolver.ResolveNode(switchStatement.Expression, this.Emitter);
+            var rr = this.Emitter.Resolver.ResolveNode(switchStatement.Expression);
             bool is64Bit = false;
             bool wrap = true;
 
@@ -391,8 +391,8 @@ namespace Bridge.Translator
             {
                 this.Write("case ");
 
-                var rr = this.Emitter.Resolver.ResolveNode(caseLabel.Expression.GetParent<SwitchStatement>().Expression, this.Emitter);
-                var caserr = this.Emitter.Resolver.ResolveNode(caseLabel.Expression, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(caseLabel.Expression.GetParent<SwitchStatement>().Expression);
+                var caserr = this.Emitter.Resolver.ResolveNode(caseLabel.Expression);
 
                 if (Helpers.Is64Type(rr.Type, this.Emitter.Resolver))
                 {

@@ -50,7 +50,7 @@ namespace Bridge.Translator
             else if (this.GotoCaseStatement != null)
             {
                 var switchStatement = this.GotoCaseStatement.GetParent<SwitchStatement>();
-                var rr = this.Emitter.Resolver.ResolveNode(this.GotoCaseStatement.LabelExpression, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(this.GotoCaseStatement.LabelExpression);
 
                 node = switchStatement.SwitchSections.First(ss => ss.CaseLabels.Any(cl =>
                 {
@@ -59,7 +59,7 @@ namespace Bridge.Translator
                         return false;
                     }
 
-                    var caseLabel_rr = this.Emitter.Resolver.ResolveNode(cl.Expression, this.Emitter);
+                    var caseLabel_rr = this.Emitter.Resolver.ResolveNode(cl.Expression);
 
                     if (caseLabel_rr.ConstantValue is string)
                     {

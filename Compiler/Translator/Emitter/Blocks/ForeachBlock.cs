@@ -90,9 +90,9 @@ namespace Bridge.Translator
 
             var iteratorName = this.AddLocal(this.GetTempVarName(), null, AstType.Null);
 
-            var for_rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement, this.Emitter);
+            var for_rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement);
             var get_rr = for_rr.GetEnumeratorCall as InvocationResolveResult;
-            var in_rr = this.Emitter.Resolver.ResolveNode(foreachStatement.InExpression, this.Emitter);
+            var in_rr = this.Emitter.Resolver.ResolveNode(foreachStatement.InExpression);
             var inline = get_rr != null ? this.Emitter.GetInline(get_rr.Member) : null;
             var checkEnum = in_rr.Type.Kind != TypeKind.Array && !in_rr.Type.IsKnownType(KnownTypeCode.String) &&
                            !in_rr.Type.IsKnownType(KnownTypeCode.Array);
@@ -115,7 +115,7 @@ namespace Bridge.Translator
                 for_rr.CollectionType.FullName == "System.Collections.Generic.IEnumerable")
                 {
                     this.WriteComma(false);
-                    this.Write(BridgeTypes.ToJsName(((ParameterizedType)for_rr.CollectionType).TypeArguments[0], this.Emitter));
+                    this.Write(this.Emitter.ToJsName(((ParameterizedType)for_rr.CollectionType).TypeArguments[0]));
                 }
                 else if (get_rr != null)
                 {
@@ -168,7 +168,7 @@ namespace Bridge.Translator
             this.WriteVar();
             this.Write(varName + " = ");
 
-            var rr = this.Emitter.Resolver.ResolveNode(foreachStatement, this.Emitter) as ForEachResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(foreachStatement) as ForEachResolveResult;
 
             bool isReferenceLocal = false;
 
@@ -190,7 +190,7 @@ namespace Bridge.Translator
             }
             else if (this.CastMethod != null)
             {
-                this.Write(BridgeTypes.ToJsName(this.CastMethod.DeclaringType, this.Emitter));
+                this.Write(this.Emitter.ToJsName(this.CastMethod.DeclaringType));
                 this.WriteDot();
                 this.Write(OverloadsCollection.Create(this.Emitter, this.CastMethod).GetOverloadName());
                 this.WriteOpenParentheses();
@@ -217,7 +217,7 @@ namespace Bridge.Translator
 
                 if (needCast)
                 {
-                    this.Write(", ", BridgeTypes.ToJsName(rr.ElementVariable.Type, this.Emitter), ")");
+                    this.Write(", ", this.Emitter.ToJsName(rr.ElementVariable.Type), ")");
                 }
             }
 
@@ -303,9 +303,9 @@ namespace Bridge.Translator
             var iteratorVar = this.GetTempVarName();
             var iteratorName = this.AddLocal(iteratorVar, null, AstType.Null);
 
-            var rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement, this.Emitter);
+            var rr = (ForEachResolveResult)this.Emitter.Resolver.ResolveNode(foreachStatement);
             var get_rr = rr.GetEnumeratorCall as InvocationResolveResult;
-            var in_rr = this.Emitter.Resolver.ResolveNode(foreachStatement.InExpression, this.Emitter);
+            var in_rr = this.Emitter.Resolver.ResolveNode(foreachStatement.InExpression);
             var inline = get_rr != null ? this.Emitter.GetInline(get_rr.Member) : null;
             var checkEnum = in_rr.Type.Kind != TypeKind.Array && !in_rr.Type.IsKnownType(KnownTypeCode.String) &&
                            !in_rr.Type.IsKnownType(KnownTypeCode.Array);
@@ -327,7 +327,7 @@ namespace Bridge.Translator
                 if (isGenericEnumerable)
                 {
                     this.WriteComma(false);
-                    this.Write(BridgeTypes.ToJsName(((ParameterizedType)rr.CollectionType).TypeArguments[0], this.Emitter));
+                    this.Write(this.Emitter.ToJsName(((ParameterizedType)rr.CollectionType).TypeArguments[0]));
                 }
                 else if (get_rr != null)
                 {
@@ -396,7 +396,7 @@ namespace Bridge.Translator
                 }
                 else if (this.CastMethod != null)
                 {
-                    this.Write(BridgeTypes.ToJsName(this.CastMethod.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(this.CastMethod.DeclaringType));
                     this.WriteDot();
                     this.Write(OverloadsCollection.Create(this.Emitter, this.CastMethod).GetOverloadName());
                     this.WriteOpenParentheses();
@@ -423,7 +423,7 @@ namespace Bridge.Translator
 
                     if (needCast)
                     {
-                        this.Write(", ", BridgeTypes.ToJsName(rr.ElementVariable.Type, this.Emitter), ")");
+                        this.Write(", ", this.Emitter.ToJsName(rr.ElementVariable.Type), ")");
                     }
                 }
 

@@ -176,11 +176,11 @@ namespace Bridge.Translator
                     ResolveResult rr = null;
                     if (member.VarInitializer != null)
                     {
-                        rr = this.Emitter.Resolver.ResolveNode(member.VarInitializer, this.Emitter);
+                        rr = this.Emitter.Resolver.ResolveNode(member.VarInitializer);
                     }
                     else
                     {
-                        rr = this.Emitter.Resolver.ResolveNode(member.Entity, this.Emitter);
+                        rr = this.Emitter.Resolver.ResolveNode(member.Entity);
                     }
 
                     if (rr != null && rr.Type.Kind == TypeKind.Enum)
@@ -201,7 +201,7 @@ namespace Bridge.Translator
 
                 if (!isNull && !isPrimitive)
                 {
-                    var constrr = this.Emitter.Resolver.ResolveNode(member.Initializer, this.Emitter);
+                    var constrr = this.Emitter.Resolver.ResolveNode(member.Initializer);
                     if (constrr != null && constrr.IsCompileTimeConstant)
                     {
                         //isPrimitive = true;
@@ -233,7 +233,7 @@ namespace Bridge.Translator
 
                 if (isPrimitive && constValue is AstType)
                 {
-                    var itype = this.Emitter.Resolver.ResolveNode((AstType)constValue, this.Emitter);
+                    var itype = this.Emitter.Resolver.ResolveNode((AstType)constValue);
 
                     if (NullableType.IsNullable(itype.Type))
                     {
@@ -246,7 +246,7 @@ namespace Bridge.Translator
                 MemberResolveResult init_rr = null;
                 if (isField && member.VarInitializer != null)
                 {
-                    init_rr = this.Emitter.Resolver.ResolveNode(member.VarInitializer, this.Emitter) as MemberResolveResult;
+                    init_rr = this.Emitter.Resolver.ResolveNode(member.VarInitializer) as MemberResolveResult;
                     tpl = init_rr != null ? this.Emitter.GetInline(init_rr.Member) : null;
 
                     if (tpl != null)
@@ -259,7 +259,7 @@ namespace Bridge.Translator
 
                 if (isProperty)
                 {
-                    var member_rr = this.Emitter.Resolver.ResolveNode(member.Entity, this.Emitter) as MemberResolveResult;
+                    var member_rr = this.Emitter.Resolver.ResolveNode(member.Entity) as MemberResolveResult;
                     var property = (IProperty)member_rr.Member;
                     isAutoProperty = Helpers.IsAutoProperty(property);
                 }
@@ -282,12 +282,12 @@ namespace Bridge.Translator
                         AstType astType = null;
                         if (member.VarInitializer != null)
                         {
-                            rr = this.Emitter.Resolver.ResolveNode(member.VarInitializer, this.Emitter);
+                            rr = this.Emitter.Resolver.ResolveNode(member.VarInitializer);
                         }
                         else
                         {
                             astType = member.Entity.ReturnType;
-                            rr = this.Emitter.Resolver.ResolveNode(member.Entity, this.Emitter);
+                            rr = this.Emitter.Resolver.ResolveNode(member.Entity);
                         }
 
                         constValue = Inspector.GetDefaultFieldValue(rr.Type, astType);
@@ -399,7 +399,7 @@ namespace Bridge.Translator
                         }
                         else
                         {
-                            var rr = this.Emitter.Resolver.ResolveNode(member.Initializer, this.Emitter) as CSharpInvocationResolveResult;
+                            var rr = this.Emitter.Resolver.ResolveNode(member.Initializer) as CSharpInvocationResolveResult;
                             bool isDefaultInstance = rr != null &&
                                                      rr.Member.SymbolKind == SymbolKind.Constructor &&
                                                      rr.Arguments.Count == 0 &&
@@ -431,7 +431,7 @@ namespace Bridge.Translator
                 MemberResolveResult m_rr = null;
                 if (member.Entity != null)
                 {
-                    m_rr = this.Emitter.Resolver.ResolveNode(member.Entity, this.Emitter) as MemberResolveResult;
+                    m_rr = this.Emitter.Resolver.ResolveNode(member.Entity) as MemberResolveResult;
                     if (m_rr != null)
                     {
                         withoutTypeParams = OverloadsCollection.ExcludeTypeParameterForDefinition(m_rr);
@@ -569,7 +569,7 @@ namespace Bridge.Translator
 
                 if (!isNull && !isPrimitive)
                 {
-                    var constrr = this.Emitter.Resolver.ResolveNode(member.Initializer, this.Emitter) as ConstantResolveResult;
+                    var constrr = this.Emitter.Resolver.ResolveNode(member.Initializer) as ConstantResolveResult;
                     if (constrr != null)
                     {
                         isPrimitive = true;
@@ -633,11 +633,11 @@ namespace Bridge.Translator
                     continue;
                 }
 
-                var rr = Emitter.Resolver.ResolveNode(member.Entity, Emitter) as MemberResolveResult;
+                var rr = Emitter.Resolver.ResolveNode(member.Entity) as MemberResolveResult;
 
                 if (rr == null && member.VarInitializer != null)
                 {
-                    rr = Emitter.Resolver.ResolveNode(member.VarInitializer, Emitter) as MemberResolveResult;
+                    rr = Emitter.Resolver.ResolveNode(member.VarInitializer) as MemberResolveResult;
                 }
 
                 if (rr != null)

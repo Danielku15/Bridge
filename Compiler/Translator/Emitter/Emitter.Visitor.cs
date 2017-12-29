@@ -1,6 +1,4 @@
 using System.Linq;
-using Bridge.Contract;
-using Bridge.Contract.Constants;
 using ICSharpCode.NRefactory.CSharp;
 
 namespace Bridge.Translator

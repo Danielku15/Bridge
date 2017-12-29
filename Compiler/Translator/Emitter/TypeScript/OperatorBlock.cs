@@ -43,7 +43,7 @@ namespace Bridge.Translator.TypeScript
 
             this.WriteColon();
 
-            var retType = BridgeTypes.ToTypeScriptName(operatorDeclaration.ReturnType, this.Emitter);
+            var retType = this.Emitter.ToTypeScriptName(operatorDeclaration.ReturnType);
             this.Write(retType);
 
             this.WriteSemiColon();
@@ -67,7 +67,7 @@ namespace Bridge.Translator.TypeScript
                 needComma = true;
                 this.Write(name);
                 this.WriteColon();
-                name = BridgeTypes.ToTypeScriptName(p.Type, this.Emitter);
+                name = this.Emitter.ToTypeScriptName(p.Type);
                 this.Write(name);
             }
 

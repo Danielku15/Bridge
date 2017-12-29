@@ -3,7 +3,6 @@ using Bridge.Contract;
 using Bridge.Contract.Constants;
 using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.Semantics;
-using System.Linq;
 using ICSharpCode.NRefactory.TypeSystem;
 
 namespace Bridge.Translator
@@ -29,7 +28,7 @@ namespace Bridge.Translator
             base.BeginEmit();
             this.OldRules = this.Emitter.Rules;
 
-            var rr = this.Emitter.Resolver.ResolveNode(this.PropertyDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(this.PropertyDeclaration) as MemberResolveResult;
 
             if (rr != null)
             {
@@ -45,7 +44,7 @@ namespace Bridge.Translator
 
         protected override void DoEmit()
         {
-            var memberResult = this.Emitter.Resolver.ResolveNode(this.PropertyDeclaration, this.Emitter) as MemberResolveResult;
+            var memberResult = this.Emitter.Resolver.ResolveNode(this.PropertyDeclaration) as MemberResolveResult;
             if (memberResult != null && memberResult.Member.IsExternal())
             {
                 return;
@@ -82,7 +81,7 @@ namespace Bridge.Translator
                 this.WriteColon();
                 this.WriteFunction();
 
-                var m_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(propertyDeclaration, this.Emitter);
+                var m_rr = (MemberResolveResult)this.Emitter.Resolver.ResolveNode(propertyDeclaration);
                 var nm = Helpers.GetFunctionName(this.Emitter.AssemblyInfo.NamedFunctions, m_rr.Member, this.Emitter, setter);
                 if (nm != null)
                 {

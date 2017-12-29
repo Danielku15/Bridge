@@ -4,6 +4,7 @@ using ICSharpCode.NRefactory.CSharp;
 using Object.Net.Utilities;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.NRefactory.TypeSystem;
 
 namespace Bridge.Translator.TypeScript
 {
@@ -115,7 +116,7 @@ namespace Bridge.Translator.TypeScript
                 }
             }
 
-            if (this.TypeInfo.ClassType == ClassType.Struct && !this.StaticBlock)
+            if (this.TypeInfo.Type.Kind == TypeKind.Struct && !this.StaticBlock)
             {
                 this.EmitStructMethods();
             }
@@ -128,7 +129,7 @@ namespace Bridge.Translator.TypeScript
 
             if (structName.IsEmpty())
             {
-                structName = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter);
+                structName = this.Emitter.ToJsName(this.TypeInfo.Type);
             }
 
             if (this.TypeInfo.InstanceConfig.Fields.Count == 0)

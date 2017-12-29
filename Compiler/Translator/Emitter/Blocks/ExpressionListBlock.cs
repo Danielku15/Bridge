@@ -73,7 +73,7 @@ namespace Bridge.Translator
 
             if (paramArg != null && this.InvocationExpression != null)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(this.InvocationExpression, this.Emitter) as CSharpInvocationResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(this.InvocationExpression) as CSharpInvocationResolveResult;
                 if (rr != null)
                 {
                     expandParams = rr.Member.ExpandParams();
@@ -83,7 +83,7 @@ namespace Bridge.Translator
 
             if (paramArg != null && expandParams)
             {
-                var resolveResult = this.Emitter.Resolver.ResolveNode(paramArg, this.Emitter);
+                var resolveResult = this.Emitter.Resolver.ResolveNode(paramArg);
 
                 if (resolveResult.Type.Kind == TypeKind.Array && !(paramArg is ArrayCreateExpression) && expressions.Last() == paramArg)
                 {
@@ -102,7 +102,7 @@ namespace Bridge.Translator
 
                         if (this.InvocationExpression != null)
                         {
-                            var rr = this.Emitter.Resolver.ResolveNode(this.InvocationExpression, this.Emitter) as MemberResolveResult;
+                            var rr = this.Emitter.Resolver.ResolveNode(this.InvocationExpression) as MemberResolveResult;
 
                             if (rr != null && !rr.Member.IsStatic && this.InvocationExpression is InvocationExpression)
                             {
@@ -167,7 +167,7 @@ namespace Bridge.Translator
                 var directExpr = expr as DirectionExpression;
                 if (directExpr != null)
                 {
-                    var resolveResult = this.Emitter.Resolver.ResolveNode(expr, this.Emitter);
+                    var resolveResult = this.Emitter.Resolver.ResolveNode(expr);
                     var byReferenceResolveResult = resolveResult as ByReferenceResolveResult;
 
                     if (byReferenceResolveResult != null && !(byReferenceResolveResult.ElementResult is LocalResolveResult))
@@ -226,7 +226,7 @@ namespace Bridge.Translator
 
                 if (expr is AssignmentExpression)
                 {
-                    Helpers.CheckValueTypeClone(this.Emitter.Resolver.ResolveNode(expr, this.Emitter), expr, this, pos);
+                    Helpers.CheckValueTypeClone(this.Emitter.Resolver.ResolveNode(expr), expr, this, pos);
                 }
             }
 

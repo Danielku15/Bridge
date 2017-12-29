@@ -1,3 +1,4 @@
+using System;
 using Bridge.Contract;
 using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.CSharp.TypeSystem;
@@ -5,7 +6,6 @@ using Mono.Cecil;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System;
 using System.Threading.Tasks;
 using ICSharpCode.NRefactory.TypeSystem;
 
@@ -20,31 +20,28 @@ namespace Bridge.Translator
 
         private class CecilAssemblyResolver : DefaultAssemblyResolver
         {
-            public ILogger Logger
-            {
-                get; set;
-            }
+            private readonly ILogger _logger;
 
             public CecilAssemblyResolver(ILogger logger, string location)
             {
-                this.Logger = logger;
+                this._logger = logger;
 
-                this.ResolveFailure += CecilAssemblyResolver_ResolveFailure;
+                this.ResolveFailure += this.OnResolveFailure;
 
                 this.AddSearchDirectory(Path.GetDirectoryName(location));
             }
 
-            private AssemblyDefinition CecilAssemblyResolver_ResolveFailure(object sender, AssemblyNameReference reference)
+            private AssemblyDefinition OnResolveFailure(object sender, AssemblyNameReference reference)
             {
                 string fullName = reference != null ? reference.FullName : "";
-                this.Logger.Trace("CecilAssemblyResolver: ResolveFailure " + (fullName ?? ""));
+                this._logger.Trace("CecilAssemblyResolver: ResolveFailure " + (fullName ?? ""));
 
                 return null;
             }
 
             public override AssemblyDefinition Resolve(string fullName)
             {
-                this.Logger.Trace("CecilAssemblyResolver: Resolve(string) " + (fullName ?? ""));
+                this._logger.Trace("CecilAssemblyResolver: Resolve(string) " + (fullName ?? ""));
 
                 return base.Resolve(fullName);
             }
@@ -53,18 +50,18 @@ namespace Bridge.Translator
             {
                 string fullName = name != null ? name.FullName : "";
 
-                this.Logger.Trace("CecilAssemblyResolver: Resolve(AssemblyNameReference) " + (fullName ?? ""));
+                this._logger.Trace("CecilAssemblyResolver: Resolve(AssemblyNameReference) " + (fullName ?? ""));
 
                 return base.Resolve(name);
             }
 
             public override AssemblyDefinition Resolve(string fullName, ReaderParameters parameters)
             {
-                this.Logger.Trace(
+                this._logger.Trace(
                     "CecilAssemblyResolver: Resolve(string, ReaderParameters) "
                     + (fullName ?? "")
                     + ", "
-                    + (parameters != null ? parameters.ReadingMode.ToString() : "")
+                    + (parameters?.ReadingMode.ToString() ?? "")
                     );
 
                 return base.Resolve(fullName, parameters);
@@ -74,11 +71,11 @@ namespace Bridge.Translator
             {
                 string fullName = name != null ? name.FullName : "";
 
-                this.Logger.Trace(
+                this._logger.Trace(
                     "CecilAssemblyResolver: Resolve(AssemblyNameReference, ReaderParameters) "
                     + (fullName ?? "")
                     + ", "
-                    + (parameters != null ? parameters.ReadingMode.ToString() : "")
+                    + (parameters?.ReadingMode.ToString() ?? "")
                     );
 
                 return base.Resolve(name, parameters);
@@ -89,26 +86,26 @@ namespace Bridge.Translator
         {
             this.Log.Trace("Assembly definition loading " + (location ?? "") + " ...");
 
-            if (CurrentAssemblyLocationInspected.Contains(location))
+            if (this.CurrentAssemblyLocationInspected.Contains(location))
             {
-                var message = string.Format("There is a circular reference found for assembly location {0}. To avoid the error, rename your project's assembly to be different from that location.", location);
+                var message = $"There is a circular reference found for assembly location {location}. To avoid the error, rename your project's assembly to be different from that location.";
 
                 this.Log.Error(message);
                 throw new System.InvalidOperationException(message);
             }
 
-            CurrentAssemblyLocationInspected.Push(location);
+            this.CurrentAssemblyLocationInspected.Push(location);
 
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(
                     location,
-                    new ReaderParameters()
+                    new ReaderParameters
                     {
                         ReadingMode = ReadingMode.Deferred,
                         AssemblyResolver = new CecilAssemblyResolver(this.Log, this.AssemblyLocation)
                     }
                 );
 
-            foreach (AssemblyNameReference r in assemblyDefinition.MainModule.AssemblyReferences)
+            foreach (var r in assemblyDefinition.MainModule.AssemblyReferences)
             {
                 var name = r.Name;
 
@@ -135,7 +132,7 @@ namespace Bridge.Translator
 
                 var reference = this.LoadAssembly(path, references);
 
-                if (reference != null && !references.Any(a => a.Name.FullName == reference.Name.FullName))
+                if (reference != null && references.All(a => a.Name.FullName != reference.Name.FullName))
                 {
                     references.Add(reference);
                 }
@@ -143,126 +140,24 @@ namespace Bridge.Translator
 
             this.Log.Trace("Assembly definition loading " + (location ?? "") + " done");
 
-            var cl = CurrentAssemblyLocationInspected.Pop();
+            var cl = this.CurrentAssemblyLocationInspected.Pop();
 
             if (cl != location)
             {
-                throw new System.InvalidOperationException(string.Format("Current location {0} is not the current location in stack {1}", location, cl));
+                throw new System.InvalidOperationException(
+                    $"Current location {location} is not the current location in stack {cl}");
             }
 
             return assemblyDefinition;
-        }
-
-        public virtual void ReadTypes(ICompilation compilation)
-        {
-            if (compilation.MainAssembly.AssemblyName != Translator.Bridge_ASSEMBLY || this.AssemblyInfo.Assembly != null && this.AssemblyInfo.Assembly.EnableReservedNamespaces)
-            {
-                this.ReadTypes(compilation.MainAssembly);
-            }
-
-            foreach (var item in compilation.ReferencedAssemblies)
-            {
-                this.ReadTypes(item);
-            }
-
-        }
-        protected virtual void ReadTypes(IAssembly assembly)
-        {
-            this.Log.Trace("Reading types for assembly " + assembly.FullAssemblyName + " ...");
-
-            this.AddNestedTypes(assembly.TopLevelTypeDefinitions);
-
-            this.Log.Trace("Reading types for assembly done");
-        }
-
-        protected virtual void AddNestedTypes(IEnumerable<ITypeDefinition> types)
-        {
-            foreach (var type in types.OrderBy(t => t.FullName))
-            {
-                if (type.FullName.Contains("<"))
-                {
-                    continue;
-                }
-
-                string key = BridgeTypes.GetTypeDefinitionKey(type);
-
-                BridgeType duplicateBridgeType = null;
-
-                if (this.BridgeTypes.TryGetValue(key, out duplicateBridgeType))
-                {
-                    var duplicate = duplicateBridgeType.Type.GetDefinition();
-
-                    var message = string.Format(
-                        Constants.Messages.Exceptions.DUPLICATE_BRIDGE_TYPE,
-                        type.ParentAssembly.FullAssemblyName,
-                        type.FullName,
-                        duplicate.ParentAssembly.FullAssemblyName,
-                        duplicate.FullName);
-
-                    this.Log.Error(message);
-                    throw new System.InvalidOperationException(message);
-                }
-
-                var typeInfo = this.EnsureTypeInfo(type);
-                this.BridgeTypes.Add(key, new BridgeType(key)
-                {
-                    Type = type,
-                    TypeInfo = typeInfo
-                });
-
-                if (!type.IsExternal() && type.Kind != TypeKind.Delegate)
-                {
-                    var fileName = type.GetFileName();
-                    if (fileName != null)
-                    {
-                        typeInfo.FileName = fileName;
-                    }
-                    var module = type.GetModule();
-                    if (module != null)
-                    {
-                        typeInfo.Module = module;
-                    }
-                    var dependency = type.GetModuleDependency();
-                    if (dependency != null)
-                    {
-                        typeInfo.Dependencies.Add(dependency);
-                    }
-                }
-
-                if (type.NestedTypes != null)
-                {
-                    this.AddNestedTypes(type.NestedTypes);
-                }
-            }
-        }
-
-        protected virtual ITypeInfo EnsureTypeInfo(ITypeDefinition type)
-        {
-            string key = BridgeTypes.GetTypeDefinitionKey(type);
-            ITypeInfo typeInfo = null;
-
-            if (TypeInfoDefinitions.ContainsKey(key))
-            {
-                typeInfo = TypeInfoDefinitions[key];
-            }
-            else
-            {
-                typeInfo = new TypeInfo();
-                TypeInfoDefinitions[key] = typeInfo;
-            }
-            return typeInfo;
         }
 
         protected virtual List<AssemblyDefinition> InspectReferences()
         {
             this.Log.Info("Inspecting references...");
 
-            this.TypeInfoDefinitions = new Dictionary<string, ITypeInfo>();
-
             var references = new List<AssemblyDefinition>();
-            var assembly = this.LoadAssembly(this.AssemblyLocation, references);
-            this.BridgeTypes = new BridgeTypes();
-            this.AssemblyDefinition = assembly;
+            this.AssemblyDefinition = this.LoadAssembly(this.AssemblyLocation, references);
+            this.Types = new BridgeTypes(this);
 
             if (!this.FolderMode)
             {
@@ -279,41 +174,38 @@ namespace Bridge.Translator
             return references;
         }
 
-        protected virtual void InspectTypes(MemberResolver resolver, IAssemblyInfo config)
+        protected virtual void InspectTypes()
         {
             this.Log.Info("Inspecting types...");
 
-            Inspector inspector = this.CreateInspector(config);
-            inspector.AssemblyInfo = config;
-            inspector.Resolver = resolver;
+            var inspector = new Inspector(this);
+            inspector.ReadTypes();
 
-            for (int i = 0; i < this.ParsedSourceFiles.Count; i++)
+            foreach (var sourceFile in this.ParsedSourceFiles)
             {
-                var sourceFile = this.ParsedSourceFiles[i];
-                this.Log.Trace("Visiting syntax tree " + (sourceFile != null && sourceFile.ParsedFile != null && sourceFile.ParsedFile.FileName != null ? sourceFile.ParsedFile.FileName : ""));
+                this.Log.Trace("Visiting syntax tree " + (sourceFile?.ParsedFile?.FileName ?? ""));
 
                 inspector.VisitSyntaxTree(sourceFile.SyntaxTree);
             }
 
-            this.AssemblyInfo = inspector.AssemblyInfo;
-            this.Types = inspector.Types;
-
-            this.ReadTypes(resolver.Compilation);
-
             this.Log.Info("Inspecting types done");
         }
-
-        protected virtual Inspector CreateInspector(IAssemblyInfo config = null)
-        {
-            return new Inspector(config);
-        }
+        
 
         private string[] Rewrite()
         {
             this.Log.Info("Rewriting new C# features...");
             var rewriter = new SharpSixRewriter(this);
             var result = new string[this.SourceFiles.Count];
-            Task.WaitAll(this.SourceFiles.Select((file, index) => Task.Run(() => result[index] = new SharpSixRewriter(rewriter).Rewrite(index))).ToArray());
+
+            Parallel.For(0, this.SourceFiles.Count, new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount
+            }, index =>
+            {
+                result[index] = new SharpSixRewriter(rewriter).Rewrite(index);
+            });
+
             this.Log.Info("Rewriting new C# features done...");
 
             return result;
@@ -323,7 +215,7 @@ namespace Bridge.Translator
         {
             this.Log.Info("Building syntax tree...");
 
-            var rewriten = Rewrite();
+            var rewriten = this.Rewrite();
 
             for (int i = 0; i < this.SourceFiles.Count; i++)
             {
@@ -331,11 +223,11 @@ namespace Bridge.Translator
 
                 this.Log.Trace("Source file " + (fileName ?? string.Empty) + " ...");
 
-                var parser = new ICSharpCode.NRefactory.CSharp.CSharpParser();
+                var parser = new CSharpParser();
 
-                if (AssemblyInfo.DefineConstants != null && AssemblyInfo.DefineConstants.Count > 0)
+                if (this.AssemblyInfo.DefineConstants != null && this.AssemblyInfo.DefineConstants.Count > 0)
                 {
-                    foreach (var defineConstant in AssemblyInfo.DefineConstants)
+                    foreach (var defineConstant in this.AssemblyInfo.DefineConstants)
                     {
                         parser.CompilerSettings.ConditionalSymbols.Add(defineConstant);
                     }

@@ -1,11 +1,6 @@
 using Bridge.Contract.Constants;
-using Mono.Cecil;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Object.Net.Utilities;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using Bridge.Contract;
@@ -65,7 +60,7 @@ namespace Bridge.Translator
 
             if (!module.NoName)
             {
-                moduleOutput.Append(this.ToJavaScript(module.Name));
+                moduleOutput.Append(module.Name.ToJavaScript());
                 moduleOutput.Append(", ");
             }
 
@@ -76,7 +71,7 @@ namespace Bridge.Translator
                 moduleOutput.Append("[");
                 enabledDependecies.Each(md =>
                 {
-                    moduleOutput.Append(this.ToJavaScript(md.DependencyName));
+                    moduleOutput.Append(md.DependencyName.ToJavaScript());
                     moduleOutput.Append(",");
                 });
                 moduleOutput.Remove(moduleOutput.Length - 1, 1); // remove trailing comma
@@ -98,16 +93,16 @@ namespace Bridge.Translator
             this.WriteNewLine(moduleOutput, ") {");
 
             this.WriteIndent(moduleOutput, this.InitialLevel);
-            this.WriteNewLine(moduleOutput, Emitter.INDENT + "var " + module.Name + " = { };");
+            this.WriteNewLine(moduleOutput, INDENT + "var " + module.Name + " = { };");
             moduleOutput.Append(str);
 
-            if (!str.Trim().EndsWith(Emitter.NEW_LINE))
+            if (!str.Trim().EndsWith(NEW_LINE))
             {
                 this.WriteNewLine(moduleOutput);
             }
 
             this.WriteIndent(moduleOutput, this.InitialLevel);
-            this.WriteNewLine(moduleOutput, Emitter.INDENT + "return " + module.Name + ";");
+            this.WriteNewLine(moduleOutput, INDENT + "return " + module.Name + ";");
             this.WriteIndent(moduleOutput, this.InitialLevel);
             this.WriteNewLine(moduleOutput, "});");
         }
@@ -129,7 +124,7 @@ namespace Bridge.Translator
             var str = moduleOutput.ToString();
             moduleOutput.Length = 0;
 
-            moduleOutput.Append(Emitter.INDENT);
+            moduleOutput.Append(INDENT);
             moduleOutput.Append("(function (");
 
             var enabledDependecies = this.GetEnabledDependecies(module, output);
@@ -145,18 +140,18 @@ namespace Bridge.Translator
             }
 
             this.WriteNewLine(moduleOutput, ") {");
-            moduleOutput.Append(Emitter.INDENT);
+            moduleOutput.Append(INDENT);
             this.WriteIndent(moduleOutput, this.InitialLevel);
             this.WriteNewLine(moduleOutput, "var " + module.Name + " = { };");
             moduleOutput.Append(str);
 
-            if (!str.Trim().EndsWith(Emitter.NEW_LINE))
+            if (!str.Trim().EndsWith(NEW_LINE))
             {
                 this.WriteNewLine(moduleOutput);
             }
 
             this.WriteIndent(moduleOutput, this.InitialLevel);
-            this.WriteNewLine(moduleOutput, Emitter.INDENT + "module.exports." + module.Name + " = " + module.Name + ";");
+            this.WriteNewLine(moduleOutput, INDENT + "module.exports." + module.Name + " = " + module.Name + ";");
             this.WriteIndent(moduleOutput, this.InitialLevel);
             moduleOutput.Append("}) (");
 
@@ -164,7 +159,7 @@ namespace Bridge.Translator
             {
                 enabledDependecies.Each(md =>
                 {
-                    moduleOutput.Append("require(" + this.ToJavaScript(md.DependencyName) + "),");
+                    moduleOutput.Append("require(" + md.DependencyName.ToJavaScript() + "),");
                 });
                 moduleOutput.Remove(moduleOutput.Length - 1, 1); // remove trailing comma
             }
@@ -185,7 +180,7 @@ namespace Bridge.Translator
             moduleOutput.Append(JS.Funcs.DEFINE + "(");
             if (!module.NoName)
             {
-                moduleOutput.Append(this.ToJavaScript(module.Name));
+                moduleOutput.Append(module.Name.ToJavaScript());
                 moduleOutput.Append(", ");
             }
 
@@ -196,7 +191,7 @@ namespace Bridge.Translator
                 moduleOutput.Append("[");
                 enabledDependecies.Each(md =>
                 {
-                    moduleOutput.Append(this.ToJavaScript(md.DependencyName));
+                    moduleOutput.Append(md.DependencyName.ToJavaScript());
                     moduleOutput.Append(",");
                 });
                 moduleOutput.Remove(moduleOutput.Length - 1, 1); // remove trailing comma
@@ -212,7 +207,7 @@ namespace Bridge.Translator
             {
                 enabledDependecies.Each(md =>
                 {
-                    moduleOutput.Append("require(" + this.ToJavaScript(md.DependencyName) + "),");
+                    moduleOutput.Append("require(" + md.DependencyName.ToJavaScript() + "),");
                 });
                 moduleOutput.Remove(moduleOutput.Length - 1, 1);
             }
@@ -258,7 +253,7 @@ namespace Bridge.Translator
             this.WriteNewLine(moduleOutput, "var " + module.Name + " = { };");
             moduleOutput.Append(str);
 
-            if (!str.Trim().EndsWith(Emitter.NEW_LINE))
+            if (!str.Trim().EndsWith(NEW_LINE))
             {
                 this.WriteNewLine(moduleOutput);
             }
@@ -275,10 +270,10 @@ namespace Bridge.Translator
             var str = moduleOutput.ToString();
             moduleOutput.Length = 0;
 
-            moduleOutput.Append(Emitter.INDENT);
+            moduleOutput.Append(INDENT);
             this.WriteNewLine(moduleOutput, "(function () {");
 
-            moduleOutput.Append(Emitter.INDENT);
+            moduleOutput.Append(INDENT);
             this.WriteIndent(moduleOutput, this.InitialLevel);
             this.WriteNewLine(moduleOutput, "var " + module.Name + " = { };");
 
@@ -288,21 +283,21 @@ namespace Bridge.Translator
             {
                 enabledDependecies.Each(md =>
                 {
-                    moduleOutput.Append(Emitter.INDENT);
+                    moduleOutput.Append(INDENT);
                     this.WriteIndent(moduleOutput, this.InitialLevel);
-                    this.WriteNewLine(moduleOutput, "import " + (md.VariableName.IsNotEmpty() ? md.VariableName : md.DependencyName) + " from " + this.ToJavaScript(md.DependencyName) + ";");
+                    this.WriteNewLine(moduleOutput, "import " + (md.VariableName.IsNotEmpty() ? md.VariableName : md.DependencyName) + " from " + md.DependencyName.ToJavaScript() + ";");
                 });
             }
 
             moduleOutput.Append(str);
 
-            if (!str.Trim().EndsWith(Emitter.NEW_LINE))
+            if (!str.Trim().EndsWith(NEW_LINE))
             {
                 this.WriteNewLine(moduleOutput);
             }
 
             this.WriteIndent(moduleOutput, this.InitialLevel);
-            this.WriteNewLine(moduleOutput, Emitter.INDENT + "export {" + module.Name + "};");
+            this.WriteNewLine(moduleOutput, INDENT + "export {" + module.Name + "};");
             this.WriteIndent(moduleOutput, this.InitialLevel);
             moduleOutput.Append("}) (");
 

@@ -188,7 +188,7 @@ namespace Bridge.Translator
             var unaryExpr = node.Parent as UnaryOperatorExpression;
             if (unaryExpr != null && unaryExpr.Operator == UnaryOperatorType.Await)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(unaryExpr, this.Emitter) as AwaitResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(unaryExpr) as AwaitResolveResult;
 
                 if (rr != null)
                 {
@@ -250,7 +250,7 @@ namespace Bridge.Translator
             {
                 if (method.IsStatic)
                 {
-                    this.Write(BridgeTypes.ToJsName(method.DeclaringType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(method.DeclaringType));
                     this.WriteDot();
                     this.Write(OverloadsCollection.Create(this.Emitter, method).GetOverloadName());
                     this.WriteOpenParentheses();

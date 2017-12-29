@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using Bridge.Contract;
 using ICSharpCode.NRefactory.CSharp;
-using System.Linq;
-using System.Xml.Schema;
 using Bridge.Contract.Constants;
 using ICSharpCode.NRefactory.Semantics;
 using ICSharpCode.NRefactory.TypeSystem;
@@ -32,7 +29,7 @@ namespace Bridge.Translator
             base.BeginEmit();
             this.OldRules = this.Emitter.Rules;
 
-            var rr = this.Emitter.Resolver.ResolveNode(this.MethodDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(this.MethodDeclaration) as MemberResolveResult;
 
             if (rr != null)
             {
@@ -54,7 +51,7 @@ namespace Bridge.Translator
 
         protected void VisitMethodDeclaration(MethodDeclaration methodDeclaration)
         {
-            var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration, this.Emitter) as MemberResolveResult;
+            var rr = this.Emitter.Resolver.ResolveNode(methodDeclaration) as MemberResolveResult;
             if (rr != null && rr.Member != null)
             {
                 if (rr.Member.IsExternal())

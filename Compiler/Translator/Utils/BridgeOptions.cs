@@ -32,37 +32,37 @@ namespace Bridge.Translator
 
         public BridgeOptions()
         {
-            ExtractCore = true;
-            Folder = Environment.CurrentDirectory;
+            this.ExtractCore = true;
+            this.Folder = Environment.CurrentDirectory;
         }
 
         public override string ToString()
         {
-            return string.Join(", ", GetValues().Select(x => x.Key + ":" + x.Value));
+            return string.Join(", ", this.GetValues().Select(x => x.Key + ":" + x.Value));
         }
 
         protected Dictionary<string, string> GetValues()
         {
             var r = new Dictionary<string, string>()
             {
-                { WrapProperty("Name"), GetString(this.Name) },
-                { WrapProperty("ProjectProperties"), GetString(this.ProjectProperties) },
-                { WrapProperty("ProjectLocation"), GetString(this.ProjectLocation) },
-                { WrapProperty("OutputLocation"), GetString(this.OutputLocation) },
-                { WrapProperty("DefaultFileName"), GetString(this.DefaultFileName) },
-                { WrapProperty("BridgeLocation"), GetString(this.BridgeLocation) },
-                { WrapProperty("Rebuild"), GetString(this.Rebuild) },
-                { WrapProperty("ExtractCore"), GetString(this.ExtractCore) },
-                { WrapProperty("Folder"), GetString(this.Folder) },
-                { WrapProperty("Recursive"), GetString(this.Recursive) },
-                { WrapProperty("Lib"), GetString(this.Lib) },
-                { WrapProperty("Help"), GetString(this.NoCompilation) },
-                { WrapProperty("NoTimeStamp"), GetString(this.NoTimeStamp) },
-                { WrapProperty("Run"), GetString(this.Run) },
-                { WrapProperty("FromTask"), GetString(this.FromTask) },
-                { WrapProperty("NoLoggerSetUp"), GetString(this.NoLoggerSetUp) },
-                { WrapProperty("Sources"), GetString(this.Sources) },
-                { WrapProperty("ReferencesPath"), GetString(this.ReferencesPath) }
+                {this.WrapProperty("Name"), this.GetString(this.Name) },
+                {this.WrapProperty("ProjectProperties"), this.GetString(this.ProjectProperties) },
+                {this.WrapProperty("ProjectLocation"), this.GetString(this.ProjectLocation) },
+                {this.WrapProperty("OutputLocation"), this.GetString(this.OutputLocation) },
+                {this.WrapProperty("DefaultFileName"), this.GetString(this.DefaultFileName) },
+                {this.WrapProperty("BridgeLocation"), this.GetString(this.BridgeLocation) },
+                {this.WrapProperty("Rebuild"), this.GetString(this.Rebuild) },
+                {this.WrapProperty("ExtractCore"), this.GetString(this.ExtractCore) },
+                {this.WrapProperty("Folder"), this.GetString(this.Folder) },
+                {this.WrapProperty("Recursive"), this.GetString(this.Recursive) },
+                {this.WrapProperty("Lib"), this.GetString(this.Lib) },
+                {this.WrapProperty("Help"), this.GetString(this.NoCompilation) },
+                {this.WrapProperty("NoTimeStamp"), this.GetString(this.NoTimeStamp) },
+                {this.WrapProperty("Run"), this.GetString(this.Run) },
+                {this.WrapProperty("FromTask"), this.GetString(this.FromTask) },
+                {this.WrapProperty("NoLoggerSetUp"), this.GetString(this.NoLoggerSetUp) },
+                {this.WrapProperty("Sources"), this.GetString(this.Sources) },
+                {this.WrapProperty("ReferencesPath"), this.GetString(this.ReferencesPath) }
             };
 
             return r;
@@ -75,17 +75,17 @@ namespace Bridge.Translator
 
         protected string GetString(string s)
         {
-            return s != null ? s : "";
+            return s ?? "";
         }
 
         protected string GetString(ProjectProperties p)
         {
-            return p != null ? p.ToString() : "";
+            return p?.ToString() ?? "";
         }
 
         protected string GetString(bool? b)
         {
-            return b.HasValue ? GetString(b.Value) : GetString((string)null);
+            return b.HasValue ? this.GetString(b.Value) : this.GetString((string)null);
         }
 
         protected string GetString(bool b)

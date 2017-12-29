@@ -1,5 +1,6 @@
 using Bridge.Contract;
 using System.Collections.Generic;
+// ReSharper disable InconsistentNaming
 
 namespace Bridge.Translator
 {
@@ -61,10 +62,7 @@ namespace Bridge.Translator
 
                 return this.outputBy;
             }
-            set
-            {
-                this.outputBy = value;
-            }
+            set => this.outputBy = value;
         }
 
         private FileNameCaseConvert jsFileCasing = FileNameCaseConvert.None;
@@ -75,17 +73,9 @@ namespace Bridge.Translator
         /// </summary>
         public FileNameCaseConvert FileNameCasing
         {
-            get
-            {
-                return this.jsFileCasing;
-            }
-            set
-            {
-                this.jsFileCasing = value;
-            }
+            get => this.jsFileCasing;
+            set => this.jsFileCasing = value;
         }
-
-        private JavaScriptOutputType jsOutType = JavaScriptOutputType.Both;
 
         /// <summary>
         /// The option to select JavaScript file output for only beautified, only minified or both versions.
@@ -93,15 +83,8 @@ namespace Bridge.Translator
         /// </summary>
         public JavaScriptOutputType OutputFormatting
         {
-            get
-            {
-                return this.jsOutType;
-            }
-            set
-            {
-                this.jsOutType = value;
-            }
-        }
+            get; set;
+        } = JavaScriptOutputType.Both;
 
         /// <summary>
         /// Substrings the file name starting with the defined index.
@@ -162,19 +145,10 @@ namespace Bridge.Translator
             get; set;
         }
 
-        private Bridge.Contract.DocumentationMode generateDocumentation = Bridge.Contract.DocumentationMode.Basic;
-
-        public Bridge.Contract.DocumentationMode GenerateDocumentation
+        public DocumentationMode GenerateDocumentation
         {
-            get
-            {
-                return this.generateDocumentation;
-            }
-            set
-            {
-                this.generateDocumentation = value;
-            }
-        }
+            get; set;
+        } = DocumentationMode.Basic;
 
         /// <summary>
         /// The BuildArguments will be added to the command line that build project files. It is useful for debugging, logging etc.
@@ -185,19 +159,13 @@ namespace Bridge.Translator
             get; set;
         }
 
-        /// <summary>
-        /// Deletes files from output directory using pattern "*.js|*.d.ts" before build (before extracting scripts after translation).
-        /// It is useful to replace BeforeBuild event if it just contain commands to clean the output folder.
-        /// Default value is null. It can be used either as string or bool value. True means "*.js|*.d.ts"
-        /// </summary>
+        /// <inheritdoc />
         public string CleanOutputFolderBeforeBuild
         {
             get; set;
         }
 
-        /// <summary>
-        /// Sets pattern for cleaning output directory.
-        /// </summary>
+        /// <inheritdoc />
         public string CleanOutputFolderBeforeBuildPattern
         {
             get; set;

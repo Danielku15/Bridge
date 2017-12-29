@@ -59,14 +59,14 @@ namespace Bridge.Translator
             var castExpr = expression as CastExpression;
             if (castExpr != null)
             {
-                var orr = this.Emitter.Resolver.ResolveNode(castExpr.Expression, this.Emitter) as OperatorResolveResult;
+                var orr = this.Emitter.Resolver.ResolveNode(castExpr.Expression) as OperatorResolveResult;
 
                 if (orr != null)
                 {
                     return false;
                 }
 
-                var rr = this.Emitter.Resolver.ResolveNode(expression, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(expression);
                 if (rr is ConstantResolveResult)
                 {
                     return false;

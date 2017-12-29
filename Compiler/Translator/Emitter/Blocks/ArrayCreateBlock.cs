@@ -44,7 +44,7 @@ namespace Bridge.Translator
         protected void VisitArrayCreateExpression()
         {
             ArrayCreateExpression arrayCreateExpression = this.ArrayCreateExpression;
-            var rr = this.ArrayCreateResolveResult ?? (this.Emitter.Resolver.ResolveNode(arrayCreateExpression, this.Emitter) as ArrayCreateResolveResult);
+            var rr = this.ArrayCreateResolveResult ?? (this.Emitter.Resolver.ResolveNode(arrayCreateExpression) as ArrayCreateResolveResult);
             var at = (ArrayType)rr.Type;
             var rank = arrayCreateExpression.Arguments.Count;
 
@@ -67,7 +67,7 @@ namespace Bridge.Translator
                     }
                     this.Write(")");
                     this.Write(", ");
-                    this.Write(BridgeTypes.ToJsName(at.ElementType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(at.ElementType));
                     this.Write(")");
                 }
                 else
@@ -111,7 +111,7 @@ namespace Bridge.Translator
                     }
 
                     this.Write(", ");
-                    this.Write(BridgeTypes.ToJsName(at.ElementType, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(at.ElementType));
 
                     this.Write(")");
                 }
@@ -185,7 +185,7 @@ namespace Bridge.Translator
             }
 
             this.Write(", ");
-            this.Write(BridgeTypes.ToJsName(at.ElementType, this.Emitter));
+            this.Write(this.Emitter.ToJsName(at.ElementType));
 
             if (at.Dimensions > 1)
             {

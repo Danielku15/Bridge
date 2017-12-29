@@ -5,22 +5,23 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Bridge.Contract.Constants;
 
 namespace Bridge.Translator
 {
     public partial class Translator
     {
-        private Dictionary<string, string> resourceHeaderInfo;
+        private Dictionary<string, string> _resourceHeaderInfo;
         private Dictionary<string, string> ResourceHeaderInfo
         {
             get
             {
-                if (resourceHeaderInfo == null)
+                if (this._resourceHeaderInfo == null)
                 {
-                    resourceHeaderInfo = PrepareResourseHeaderInfo();
+                    this._resourceHeaderInfo = this.PrepareResourseHeaderInfo();
                 }
 
-                return resourceHeaderInfo;
+                return this._resourceHeaderInfo;
             }
         }
 
@@ -60,7 +61,7 @@ namespace Bridge.Translator
 
             var resourcesToEmbed = this.PrepareAndExtractResources(outputPath, projectPath);
 
-            this.EmbeddResources(PrepareResourcesForEmbedding(resourcesToEmbed));
+            this.EmbeddResources(this.PrepareResourcesForEmbedding(resourcesToEmbed));
 
             this.Log.Info("Done injecting resources");
         }
@@ -93,7 +94,7 @@ namespace Bridge.Translator
                         {
                             this.Log.Trace("Prepared file items for resource " + resource.Name);
 
-                            var resourcePath = GetFullPathForResource(outputPath, resource);
+                            var resourcePath = this.GetFullPathForResource(outputPath, resource);
 
                             var code = resourceBuffer.ToArray();
 
@@ -103,7 +104,7 @@ namespace Bridge.Translator
 
                                 var fullPath = Path.GetFullPath(Path.Combine(resourcePath.Item1, resourcePath.Item2));
 
-                                content = GenerateSourceMap(fullPath, content.GetContentAsString());
+                                content = this.GenerateSourceMap(fullPath, content.GetContentAsString());
 
                                 code = content.GetContentAsBytes();
                             }
@@ -235,7 +236,7 @@ namespace Bridge.Translator
 
                                 if (!string.IsNullOrEmpty(part.Value))
                                 {
-                                    if (CheckIfRequiresSourceMap(part.Key))
+                                    if (this.CheckIfRequiresSourceMap(part.Key))
                                     {
                                         var partSourceMap = this.GenerateSourceMap(part.Key.Name, part.Value);
                                         partContent = OutputEncoding.GetBytes(partSourceMap);
@@ -279,7 +280,7 @@ namespace Bridge.Translator
                 return null;
             }
 
-            string resourcesStr = null;
+            string resourcesStr;
             using (var resourcesStream = ((EmbeddedResource)listRes).GetResourceStream())
             {
                 using (StreamReader reader = new StreamReader(resourcesStream))
@@ -296,7 +297,7 @@ namespace Bridge.Translator
         private BridgeResourceInfo[] GetEmbeddedResourceList(AssemblyDefinition assemblyDefinition)
         {
             // First read Json format list
-            var resourcesStr = ReadEmbeddedResourceList(assemblyDefinition, Translator.BridgeResourcesJsonFormatList);
+            var resourcesStr = this.ReadEmbeddedResourceList(assemblyDefinition, BridgeResourcesJsonFormatList);
 
             if (resourcesStr != null)
             {
@@ -304,7 +305,7 @@ namespace Bridge.Translator
             }
 
             // Then read old plus separated format list (by another file name)
-            resourcesStr = ReadEmbeddedResourceList(assemblyDefinition, Translator.BridgeResourcesPlusSeparatedFormatList);
+            resourcesStr = this.ReadEmbeddedResourceList(assemblyDefinition, BridgeResourcesPlusSeparatedFormatList);
 
             if (resourcesStr != null)
             {
@@ -384,7 +385,7 @@ namespace Bridge.Translator
                     resourceList.Add(r);
                 }
 
-                var sizeInBytes = Utils.ByteSizeHelper.ToSizeInBytes(item.Item2 != null ? item.Item2.Length : 0, "0.000 KB", true);
+                var sizeInBytes = Utils.ByteSizeHelper.ToSizeInBytes(item.Item2?.Length ?? 0, "0.000 KB", true);
 
                 var resourceLocation = name ?? fileName;
                 if (!string.IsNullOrEmpty(r.Path) && !string.IsNullOrEmpty(resourceLocation))
@@ -401,7 +402,7 @@ namespace Bridge.Translator
                 this.Log.Trace("Added resource " + name + " (fileName: " + fileName + ")");
             }
 
-            BuildReportForResources(reportResources);
+            this.BuildReportForResources(reportResources);
 
             this.Log.Trace("PrepareResourcesForEmbedding done");
 
@@ -425,8 +426,8 @@ namespace Bridge.Translator
                 return;
             }
 
-            var maxResourceNameLength = reportResources.Max(x => x.Item2 != null ? x.Item2.Length : 0);
-            var maxResourceSizeLength = reportResources.Max(x => x.Item3 != null ? x.Item3.Length : 0);
+            var maxResourceNameLength = reportResources.Max(x => x.Item2?.Length ?? 0);
+            var maxResourceSizeLength = reportResources.Max(x => x.Item3?.Length ?? 0);
 
             foreach (var item in reportResources)
             {
@@ -434,9 +435,9 @@ namespace Bridge.Translator
                 var length = item.Item3;
 
                 var toAdd = Math.Abs(maxResourceNameLength + maxResourceSizeLength
-                    - (fullPath != null ? fullPath.Length : 0) - (length != null ? length.Length : 0));
+                    - (fullPath?.Length ?? 0) - (length?.Length ?? 0));
 
-                var reportLine = string.Format("    {0}   {1}{2}", fullPath, new string(' ', toAdd), length);
+                var reportLine = $"    {fullPath}   {new string(' ', toAdd)}{length}";
 
                 NewLine(reportBuilder, reportLine);
             }
@@ -448,17 +449,16 @@ namespace Bridge.Translator
 
             var assemblyDef = this.AssemblyDefinition;
             var resources = assemblyDef.MainModule.Resources;
-            var configHelper = new ConfigHelper();
 
-            CheckIfResourceExistsAndRemove(resources, Translator.BridgeResourcesPlusSeparatedFormatList);
+            this.CheckIfResourceExistsAndRemove(resources, BridgeResourcesPlusSeparatedFormatList);
 
-            var resourceListName = Translator.BridgeResourcesJsonFormatList;
-            CheckIfResourceExistsAndRemove(resources, resourceListName);
+            var resourceListName = BridgeResourcesJsonFormatList;
+            this.CheckIfResourceExistsAndRemove(resources, resourceListName);
 
             var listArray = resourcesToEmbed.ToArray();
             var listContent = Newtonsoft.Json.JsonConvert.SerializeObject(listArray, Newtonsoft.Json.Formatting.Indented);
 
-            var listResources = new EmbeddedResource(resourceListName, ManifestResourceAttributes.Private, Translator.OutputEncoding.GetBytes(listContent));
+            var listResources = new EmbeddedResource(resourceListName, ManifestResourceAttributes.Private, OutputEncoding.GetBytes(listContent));
 
             resources.Add(listResources);
             this.Log.Trace("Added resource list " + resourceListName);
@@ -574,7 +574,7 @@ namespace Bridge.Translator
                 if (resourceOutputDirName != null)
                 {
                     this.Log.Trace("Checking resource output directory on invalid characters");
-                    resourceOutputDirName = CheckInvalidCharacters(name, silent, resourceOutputDirName, this.InvalidPathChars);
+                    resourceOutputDirName = this.CheckInvalidCharacters(name, silent, resourceOutputDirName, this.InvalidPathChars);
                 }
 
                 if (resourceOutputDirName != null)
@@ -586,7 +586,7 @@ namespace Bridge.Translator
                     if (resourceOutputFileName != null)
                     {
                         this.Log.Trace("Checking resource output file name on invalid characters");
-                        resourceOutputFileName = CheckInvalidCharacters(name, silent, resourceOutputFileName, Path.GetInvalidFileNameChars());
+                        resourceOutputFileName = this.CheckInvalidCharacters(name, silent, resourceOutputFileName, Path.GetInvalidFileNameChars());
 
                         if (resourceOutputFileName == null)
                         {
@@ -601,7 +601,7 @@ namespace Bridge.Translator
                     resourceOutputFileName = null;
                 }
             }
-            catch (Exception ex) when (ex is ArgumentException || ex is ArgumentNullException || ex is PathTooLongException)
+            catch (Exception ex) when (ex is ArgumentException || ex is PathTooLongException)
             {
                 this.Log.Trace("Could not extract directory name from resource output setting");
                 this.Log.Error(ex.ToString());
@@ -618,7 +618,7 @@ namespace Bridge.Translator
 
         public void GetResourceOutputPath(string basePath, ResourceConfigItem resource, ref string resourceOutputFileName, ref string resourceOutputDirName)
         {
-            GetResourceOutputPath(basePath, resource.Output, resource.Name, resource.Silent, ref resourceOutputFileName, ref resourceOutputDirName);
+            this.GetResourceOutputPath(basePath, resource.Output, resource.Name, resource.Silent, ref resourceOutputFileName, ref resourceOutputDirName);
         }
 
         private string CheckInvalidCharacters(string name, bool? silent, string s, ICollection<char> invalidChars)
@@ -628,7 +628,7 @@ namespace Bridge.Translator
                 return null;
             }
 
-            if (s.Select(x => invalidChars.Contains(x)).Where(x => x).Any())
+            if (s.Select(invalidChars.Contains).Any(x => x))
             {
                 var message = "There is invalid path character contained in resource.output setting = "
                         + s
@@ -659,11 +659,11 @@ namespace Bridge.Translator
 
             this.Log.Trace("Writing header for resource config item " + resource.Name);
 
-            var headerInfo = ResourceHeaderInfo;
+            var headerInfo = this.ResourceHeaderInfo;
 
-            var headerContent = GetHeaderContent(resource, basePath);
+            var headerContent = this.GetHeaderContent(resource, basePath);
 
-            ApplyTokens(headerContent, headerInfo);
+            this.ApplyTokens(headerContent, headerInfo);
 
             if (headerContent.Length > 0)
             {
@@ -721,7 +721,7 @@ namespace Bridge.Translator
         {
             var sb = new StringBuilder(s);
 
-            ApplyTokens(sb, info);
+            this.ApplyTokens(sb, info);
 
             return sb;
         }
@@ -732,17 +732,17 @@ namespace Bridge.Translator
 
             if (sb == null)
             {
-                throw new ArgumentNullException("sb", "Cannot apply tokens for null StringBuilder");
+                throw new ArgumentNullException(nameof(sb), "Cannot apply tokens for null StringBuilder");
             }
 
             if (info == null)
             {
-                throw new ArgumentNullException("info", "Cannot apply tokens of null data");
+                throw new ArgumentNullException(nameof(info), "Cannot apply tokens of null data");
             }
 
             foreach (var item in info)
             {
-                this.Log.Trace(string.Format("Applying {{{0}}}: {1}", item.Key, item.Value));
+                this.Log.Trace($"Applying {{{item.Key}}}: {item.Value}");
                 sb.Replace("{" + item.Key + "}", item.Value);
             }
 
@@ -784,18 +784,18 @@ namespace Bridge.Translator
                 {
                     this.Log.Trace("Reading header content file at " + fullHeaderPath);
 
-                    using (var m = new StreamReader(fullHeaderPath, Translator.OutputEncoding, true))
+                    using (var m = new StreamReader(fullHeaderPath, OutputEncoding, true))
                     {
                         var sb = new StringBuilder(m.ReadToEnd());
 
-                        if (m.CurrentEncoding != OutputEncoding)
+                        if (!Equals(m.CurrentEncoding, OutputEncoding))
                         {
                             this.Log.Info("Converting resource header file "
                                            + fullHeaderPath
                                            + " from encoding "
                                            + m.CurrentEncoding.EncodingName
                                            + " into default encoding"
-                                           + Translator.OutputEncoding.EncodingName);
+                                           + OutputEncoding.EncodingName);
                         }
 
                         this.Log.Trace("Read " + sb.Length + " symbols from the header file " + fullHeaderPath);
@@ -825,17 +825,13 @@ namespace Bridge.Translator
 
             var needSourceMap = false;
 
-            var useDefaultEncoding = item.Files.Length > 1;
-
             foreach (var fileName in item.Files)
             {
                 this.Log.Trace("Reading resource item(s) in location " + fileName);
 
                 try
                 {
-                    string directoryPath;
-
-                    directoryPath = outputPath;
+                    var directoryPath = outputPath;
 
                     var dirPathInFileName = this.FileHelper.GetDirectoryAndFilenamePathComponents(fileName)[0];
 
@@ -852,7 +848,7 @@ namespace Bridge.Translator
 
                     var fullFileName = Path.Combine(directoryPath, filePathCleaned);
 
-                    GenerateResourceFileRemark(buffer, item, filePathCleaned, dirPathInFileName);
+                    this.GenerateResourceFileRemark(buffer, item, filePathCleaned, dirPathInFileName);
 
                     var outputItem = this.FindTranslatorOutputItem(fullFileName);
 
@@ -894,7 +890,7 @@ namespace Bridge.Translator
                                                 && item.Remark == null
                                                 && item.Files.Length <= 1;
 
-                        var content = CheckResourceOnBomAndAddToBuffer(buffer, item, file, resourceAsOneFile);
+                        var content = this.CheckResourceOnBomAndAddToBuffer(buffer, item, file, resourceAsOneFile);
 
                         this.Log.Trace("Read " + content.Length + " bytes");
                     }
@@ -919,7 +915,7 @@ namespace Bridge.Translator
             }
             catch (Exception ex)
             {
-                this.Log.Warn("Could not get assembly name: " + ex.ToString());
+                this.Log.Warn("Could not get assembly name: " + ex);
             }
 
             return name;
@@ -933,9 +929,9 @@ namespace Bridge.Translator
 
         private string GetExtractedResourceName(string assemblyName, string resourceName)
         {
-            var assembly = GetAssemblyNameFromResource(assemblyName);
+            var assembly = this.GetAssemblyNameFromResource(assemblyName);
 
-            if (assembly != null && !string.IsNullOrEmpty(assembly.Name))
+            if (!string.IsNullOrEmpty(assembly?.Name))
             {
                 return assembly.Name + " | " + resourceName;
             }
@@ -956,18 +952,18 @@ namespace Bridge.Translator
             {
                 this.Log.Trace("Reading resource file " + file.FullName + " via StreamReader with byte order mark detection option");
 
-                using (var m = new StreamReader(file.FullName, Translator.OutputEncoding, true))
+                using (var m = new StreamReader(file.FullName, OutputEncoding, true))
                 {
-                    content = Translator.OutputEncoding.GetBytes(m.ReadToEnd());
+                    content = OutputEncoding.GetBytes(m.ReadToEnd());
 
-                    if (m.CurrentEncoding != OutputEncoding)
+                    if (!Equals(m.CurrentEncoding, OutputEncoding))
                     {
                         this.Log.Info("Converting resource file "
                                        + file.FullName
                                        + " from encoding "
                                        + m.CurrentEncoding.EncodingName
                                        + " into default encoding"
-                                       + Translator.OutputEncoding.EncodingName);
+                                       + OutputEncoding.EncodingName);
                     }
                 }
             }
@@ -978,7 +974,7 @@ namespace Bridge.Translator
                    || (!oneFileResource && (!item.RemoveBom.HasValue || item.RemoveBom.Value));
 
                 var bomLength = checkBom
-                    ? GetBomLength(content)
+                    ? this.GetBomLength(content)
                     : 0;
 
                 if (bomLength > 0)
@@ -1058,10 +1054,10 @@ namespace Bridge.Translator
                     ["path"] = filePath
                 };
 
-                var remarkBuffer = ApplyTokens(item.Remark, remarkInfo);
-                remarkBuffer.Replace(Emitter.CRLF, Emitter.NEW_LINE);
+                var remarkBuffer = this.ApplyTokens(item.Remark, remarkInfo);
+                remarkBuffer.Replace(Bridge.Translator.Emitter.CRLF, Bridge.Translator.Emitter.NEW_LINE);
 
-                var remarkLines = remarkBuffer.ToString().Split(new[] { Emitter.NEW_LINE }, StringSplitOptions.None);
+                var remarkLines = remarkBuffer.ToString().Split(new[] { Bridge.Translator.Emitter.NEW_LINE }, StringSplitOptions.None);
                 foreach (var remarkLine in remarkLines)
                 {
                     var b = OutputEncoding.GetBytes(remarkLine);
@@ -1084,17 +1080,14 @@ namespace Bridge.Translator
 
             if (rawResources != null)
             {
-                Array.ForEach(rawResources, (x) =>
+                Array.ForEach(rawResources, x =>
                 {
-                    if (x.Name != null)
-                    {
-                        var parts = x.Name.Split(new[] { '#' }, StringSplitOptions.None);
+                    var parts = x.Name?.Split(new[] { '#' }, StringSplitOptions.None);
 
-                        if (parts.Length > 1)
-                        {
-                            x.Assembly = parts[0];
-                            x.Name = parts[1];
-                        }
+                    if (parts?.Length > 1)
+                    {
+                        x.Assembly = parts[0];
+                        x.Name = parts[1];
                     }
                 });
 
@@ -1119,7 +1112,7 @@ namespace Bridge.Translator
 
                     foreach (var resource in rawNonDefaultResources)
                     {
-                        ApplyDefaultResourceConfigSetting(defaultSetting, resource);
+                        this.ApplyDefaultResourceConfigSetting(defaultSetting, resource);
 
                         resources.Add(resource);
                     }
@@ -1133,10 +1126,10 @@ namespace Bridge.Translator
                 this.Log.Trace("The resources config section has " + resources.Count + " non-default settings");
             }
 
-            CheckConsoleConfigSetting(resources, defaultSetting);
+            this.CheckConsoleConfigSetting(resources, defaultSetting);
 
-            var toEmbed = resources.Where(x => x.Files != null && x.Files.Count() > 0).ToArray();
-            var toExtract = resources.Where(x => x.Files == null || x.Files.Count() <= 0).ToArray();
+            var toEmbed = resources.Where(x => x.Files != null && x.Files.Any()).ToArray();
+            var toExtract = resources.Where(x => x.Files == null || !x.Files.Any()).ToArray();
 
             config.Prepare(defaultSetting, toEmbed, toExtract);
             this.Log.Trace("Done preparing resources config");
@@ -1149,10 +1142,10 @@ namespace Bridge.Translator
             this.Log.Trace("CheckConsoleConfigSetting...");
 
             var consoleResourceName = BridgeConsoleName;
-            var consoleResourceMinifiedName = FileHelper.GetMinifiedJSFileName(consoleResourceName);
+            var consoleResourceMinifiedName = this.FileHelper.GetMinifiedJSFileName(consoleResourceName);
 
-            var consoleFormatted = resources.Where(x => x.Name == consoleResourceName && (x.Assembly == null || x.Assembly == Translator.Bridge_ASSEMBLY)).FirstOrDefault();
-            var consoleMinified = resources.Where(x => x.Name == consoleResourceMinifiedName && (x.Assembly == null || x.Assembly == Translator.Bridge_ASSEMBLY)).FirstOrDefault();
+            var consoleFormatted = resources.FirstOrDefault(x => x.Name == consoleResourceName && (x.Assembly == null || x.Assembly == CS.NS.BRIDGE));
+            var consoleMinified = resources.FirstOrDefault(x => x.Name == consoleResourceMinifiedName && (x.Assembly == null || x.Assembly == CS.NS.BRIDGE));
 
             if (this.AssemblyInfo.Console.Enabled != true)
             {
@@ -1284,7 +1277,7 @@ namespace Bridge.Translator
 
             if (defaultSetting.Output != null && rawNonDefaultResourcesWithExtractAndNoOutput.Count() > 1)
             {
-                string defaultOutputFileName = null;
+                string defaultOutputFileName;
 
                 try
                 {
@@ -1292,6 +1285,7 @@ namespace Bridge.Translator
                 }
                 catch (Exception)
                 {
+                    defaultOutputFileName = null;
                 }
 
                 if (!string.IsNullOrEmpty(defaultOutputFileName))
@@ -1346,12 +1340,7 @@ namespace Bridge.Translator
         /// <returns>A path with replaced '\' -> '/'</returns>
         private string MakeStandardPath(string path)
         {
-            if (path == null)
-            {
-                return path;
-            }
-
-            return path.Replace('\\', '/');
+            return path?.Replace('\\', '/');
         }
 
         protected byte[] ReadStream(Stream stream)

@@ -31,7 +31,7 @@ namespace Bridge.Translator.TypeScript
         {
             XmlToJsDoc.EmitComment(this, this.MethodDeclaration);
             var overloads = OverloadsCollection.Create(this.Emitter, methodDeclaration);
-            var memberResult = this.Emitter.Resolver.ResolveNode(methodDeclaration, this.Emitter) as MemberResolveResult;
+            var memberResult = this.Emitter.Resolver.ResolveNode(methodDeclaration) as MemberResolveResult;
             var isInterface = memberResult.Member.DeclaringType.Kind == TypeKind.Interface;
             var ignoreInterface = isInterface &&
                                       memberResult.Member.DeclaringType.TypeParameterCount > 0;
@@ -105,7 +105,7 @@ namespace Bridge.Translator.TypeScript
 
             this.WriteColon();
 
-            var retType = BridgeTypes.ToTypeScriptName(methodDeclaration.ReturnType, this.Emitter);
+            var retType = this.Emitter.ToTypeScriptName(methodDeclaration.ReturnType);
             this.Write(retType);
 
             this.WriteSemiColon();
@@ -135,7 +135,7 @@ namespace Bridge.Translator.TypeScript
                 }
 
                 this.WriteColon();
-                name = BridgeTypes.ToTypeScriptName(p.Type, this.Emitter);
+                name = this.Emitter.ToTypeScriptName(p.Type);
                 if (p.ParameterModifier == ParameterModifier.Out || p.ParameterModifier == ParameterModifier.Ref)
                 {
                     name = "{v: " + name + "}";

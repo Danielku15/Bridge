@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace Bridge.Translator.TypeScript
 {
-    public partial class ConstructorBlock : TypeScriptBlock
+    public class ConstructorBlock : TypeScriptBlock
     {
         public ConstructorBlock(IEmitter emitter, ITypeInfo typeInfo)
             : base(emitter, typeInfo.TypeDeclaration)
@@ -36,7 +36,7 @@ namespace Bridge.Translator.TypeScript
 
             if (name.IsEmpty())
             {
-                name = BridgeTypes.ToTypeScriptName(this.TypeInfo.Type, this.Emitter, false, true);
+                name = this.Emitter.ToTypeScriptName(this.TypeInfo.Type, false, true);
             }
 
             if (this.TypeInfo.Ctors.Count == 0)
@@ -128,7 +128,7 @@ namespace Bridge.Translator.TypeScript
                 needComma = true;
                 this.Write(name);
                 this.WriteColon();
-                name = BridgeTypes.ToTypeScriptName(p.Type, this.Emitter);
+                name = this.Emitter.ToTypeScriptName(p.Type);
                 this.Write(name);
             }
 

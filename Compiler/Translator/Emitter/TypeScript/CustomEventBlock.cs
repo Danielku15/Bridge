@@ -31,14 +31,14 @@ namespace Bridge.Translator.TypeScript
             if (!accessor.IsNull && this.Emitter.GetInline(accessor) == null)
             {
                 XmlToJsDoc.EmitComment(this, customEventDeclaration);
-                var memberResult = this.Emitter.Resolver.ResolveNode(customEventDeclaration, this.Emitter) as MemberResolveResult;
+                var memberResult = this.Emitter.Resolver.ResolveNode(customEventDeclaration) as MemberResolveResult;
                 var ignoreInterface = memberResult.Member.DeclaringType.Kind == TypeKind.Interface &&
                                           memberResult.Member.DeclaringType.TypeParameterCount > 0;
                 this.Write(Helpers.GetEventRef(customEventDeclaration, this.Emitter, remover, false, ignoreInterface));
                 this.WriteOpenParentheses();
                 this.Write("value");
                 this.WriteColon();
-                var retType = BridgeTypes.ToTypeScriptName(customEventDeclaration.ReturnType, this.Emitter);
+                var retType = this.Emitter.ToTypeScriptName(customEventDeclaration.ReturnType);
                 this.Write(retType);
                 this.WriteCloseParentheses();
                 this.WriteColon();

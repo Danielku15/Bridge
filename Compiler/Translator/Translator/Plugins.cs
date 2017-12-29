@@ -10,6 +10,7 @@ using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+// ReSharper disable InconsistentNaming
 
 namespace Bridge.Translator
 {
@@ -35,7 +36,7 @@ namespace Bridge.Translator
             return path;
         }
 
-        static Dictionary<string, AssemblyName> assemblyBindings = new Dictionary<string, AssemblyName>
+        static readonly Dictionary<string, AssemblyName> AssemblyBindings = new Dictionary<string, AssemblyName>
         {
             { "System.ValueTuple", new AssemblyName("System.ValueTuple, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51") },
             { "System.Collections.Immutable", new AssemblyName("System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a") },
@@ -68,13 +69,13 @@ namespace Bridge.Translator
 
                 AssemblyName askedAssembly = new AssemblyName(args.Name);
                 Assembly assemblyLoaded = null;
-                if (Plugins.assemblyBindings.ContainsKey(askedAssembly.Name))
+                if (AssemblyBindings.ContainsKey(askedAssembly.Name))
                 {
-                    assemblyLoaded = AssemblyResolver.CheckIfFullAssemblyLoaded(Plugins.assemblyBindings[askedAssembly.Name], domain);
+                    assemblyLoaded = CheckIfFullAssemblyLoaded(AssemblyBindings[askedAssembly.Name], domain);
                 }
                 else
                 {
-                    assemblyLoaded = AssemblyResolver.CheckIfAssemblyLoaded(askedAssembly.Name, domain);
+                    assemblyLoaded = CheckIfAssemblyLoaded(askedAssembly.Name, domain);
                 }
 
                 if (assemblyLoaded != null)
@@ -87,7 +88,7 @@ namespace Bridge.Translator
 
                 if (args.RequestingAssembly != null)
                 {
-                    assemblyLoaded = Plugins.LoadAssemblyFromResources(this.Logger, args.RequestingAssembly, askedAssembly);
+                    assemblyLoaded = LoadAssemblyFromResources(this.Logger, args.RequestingAssembly, askedAssembly);
 
                     if (assemblyLoaded != null)
                     {
@@ -129,10 +130,10 @@ namespace Bridge.Translator
                     return null;
                 }
 
-                if (Plugins.assemblyBindings.ContainsKey(fullAssemblyName))
+                if (AssemblyBindings.ContainsKey(fullAssemblyName))
                 {
                     this.loadedStack.Push(fullAssemblyName);
-                    var asm = Assembly.Load(Plugins.assemblyBindings[fullAssemblyName]);
+                    var asm = Assembly.Load(AssemblyBindings[fullAssemblyName]);
                     this.loadedStack.Pop();
                     return asm;
                 }
@@ -170,19 +171,20 @@ namespace Bridge.Translator
             }
         }
 
-        public static IPlugins GetPlugins(ITranslator translator, IAssemblyInfo config, ILogger logger)
+        public static IPlugins GetPlugins(ITranslator translator, IAssemblyInfo config)
         {
+            var logger = translator.Log;
             logger.Info("Discovering plugins...");
 
-            if (!Plugins.IsLoaded)
+            if (!IsLoaded)
             {
-                var resolver = new AssemblyResolver() { Logger = logger };
+                var resolver = new AssemblyResolver { Logger = logger };
 
                 AppDomain.CurrentDomain.AssemblyResolve += resolver.CurrentDomain_AssemblyResolve;
 
                 AppDomain.CurrentDomain.AssemblyLoad += resolver.CurrentDomain_AssemblyLoad;
 
-                Plugins.IsLoaded = true;
+                IsLoaded = true;
 
                 logger.Trace("Set assembly Resolve and Load events for domain " + AppDomain.CurrentDomain.FriendlyName);
             }
@@ -195,7 +197,7 @@ namespace Bridge.Translator
             foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
                 var location = a.IsDynamic ? "dynamic" : a.Location;
-                logger.Trace(string.Format("\t{0} {1} {2}", a.FullName, location, a.GlobalAssemblyCache));
+                logger.Trace($"\t{a.FullName} {location} {a.GlobalAssemblyCache}");
             }
 
             var path = GetPluginPath(translator, config);
@@ -214,8 +216,7 @@ namespace Bridge.Translator
             }
 
             string[] skipPluginAssemblies = null;
-            var translatorInstance = translator as Translator;
-            if (translatorInstance != null)
+            if (translator is Translator translatorInstance)
             {
                 skipPluginAssemblies = translatorInstance.SkipPluginAssemblies;
             }
@@ -226,51 +227,47 @@ namespace Bridge.Translator
             {
                 logger.Trace("Searching plugins in reference " + reference.FullName + " ...");
 
-                if (skipPluginAssemblies != null && skipPluginAssemblies.FirstOrDefault(x => reference.Name.FullName.Contains(x)) != null)
+                if (skipPluginAssemblies?.FirstOrDefault(x => reference.Name.FullName.Contains(x)) != null)
                 {
                     logger.Trace("Skipping the reference " + reference.Name.FullName + " as it is in skipPluginAssemblies");
                     continue;
                 }
-                else
+
+                logger.Trace("skipPluginAssemblies is not set");
+
+                var assemblies = reference.MainModule.Resources.Where(res => res.Name.StartsWith(PLUGIN_RESOURCE_NAME_PREFIX))
+                    .ToArray();
+
+                logger.Trace("The reference contains " + assemblies.Length + " resource(s) needed");
+
+                foreach (var res_assembly in assemblies)
                 {
-                    logger.Trace("skipPluginAssemblies is not set");
-                }
+                    logger.Trace("Searching plugins in resource " + res_assembly.Name + " ...");
 
-                var assemblies = reference.MainModule.Resources.Where(res => res.Name.StartsWith(PLUGIN_RESOURCE_NAME_PREFIX));
-
-                logger.Trace("The reference contains " + assemblies.Count() + " resource(s) needed");
-
-                if (assemblies.Any())
-                {
-                    foreach (var res_assembly in assemblies)
+                    try
                     {
-                        logger.Trace("Searching plugins in resource " + res_assembly.Name + " ...");
-
-                        try
+                        using (var resourcesStream = ((EmbeddedResource)res_assembly).GetResourceStream())
                         {
-                            using (var resourcesStream = ((EmbeddedResource)res_assembly).GetResourceStream())
-                            {
-                                var ba = new byte[(int)resourcesStream.Length];
-                                resourcesStream.Read(ba, 0, (int)resourcesStream.Length);
+                            var ba = new byte[(int)resourcesStream.Length];
+                            resourcesStream.Read(ba, 0, (int)resourcesStream.Length);
 
-                                logger.Trace("Read the assembly resource stream of " + resourcesStream.Length + " bytes length");
+                            logger.Trace("Read the assembly resource stream of " + resourcesStream.Length + " bytes length");
 
-                                var trimmedName = Plugins.TrimResourceAssemblyName(res_assembly, PLUGIN_RESOURCE_NAME_PREFIX);
+                            var trimmedName = TrimResourceAssemblyName(res_assembly, PLUGIN_RESOURCE_NAME_PREFIX);
 
-                                var assembly = CheckIfAssemblyLoaded(logger, ba, null, trimmedName);
+                            var assembly = CheckIfAssemblyLoaded(logger, ba, null, trimmedName);
 
-                                catalogs.Add(new AssemblyCatalog(assembly));
-                                logger.Trace("The assembly " + assembly.FullName + " added to the catalogs");
-                            }
+                            catalogs.Add(new AssemblyCatalog(assembly));
+                            logger.Trace("The assembly " + assembly.FullName + " added to the catalogs");
                         }
-                        catch (ReflectionTypeLoadException ex)
-                        {
-                            LogAssemblyLoaderException("Could not load assembly from resources", ex, logger);
-                        }
-                        catch (System.Exception ex)
-                        {
-                            logger.Error("Could not load assembly from resources: " + ex.ToString());
-                        }
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        LogAssemblyLoaderException("Could not load assembly from resources", ex, logger);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error("Could not load assembly from resources: " + ex.ToString());
                     }
                 }
             }
@@ -278,7 +275,7 @@ namespace Bridge.Translator
             if (catalogs.Count == 0)
             {
                 logger.Info("No AssemblyCatalogs found");
-                return new Plugins() { plugins = new IPlugin[0] };
+                return new Plugins { plugins = new IPlugin[0] };
             }
 
             var catalog = new AggregateCatalog(catalogs);
@@ -296,9 +293,9 @@ namespace Bridge.Translator
             {
                 LogAssemblyLoaderException("Could not compose Plugin parts", ex, logger);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                logger.Error("Could not compose Plugin parts: " + ex.ToString());
+                logger.Error("Could not compose Plugin parts: " + ex);
             }
 
             if (plugins.Parts != null)
@@ -366,7 +363,7 @@ namespace Bridge.Translator
 
             foreach (var resourceName in resourceNames)
             {
-                var trimmedResourceName = Plugins.TrimAssemblyName(resourceName);
+                var trimmedResourceName = TrimAssemblyName(resourceName);
 
                 logger.Trace("Scanning resource " + resourceName + ". Trimmed resource name " + trimmedResourceName + " ...");
 
@@ -402,14 +399,7 @@ namespace Bridge.Translator
             {
                 logger.Trace("Loading the assembly into domain " + AppDomain.CurrentDomain.FriendlyName + " ...");
 
-                if (ba != null)
-                {
-                    assembly = Assembly.Load(ba);
-                }
-                else
-                {
-                    assembly = Assembly.Load(assemblyName);
-                }
+                assembly = ba != null ? Assembly.Load(ba) : Assembly.Load(assemblyName);
 
                 logger.Trace("Assembly " + assembly.FullName + " is loaded into domain " + AppDomain.CurrentDomain.FriendlyName);
             }
@@ -452,15 +442,7 @@ namespace Bridge.Translator
 
         public IEnumerable<IPlugin> Parts
         {
-            get
-            {
-                if (this.plugins == null)
-                {
-                    this.plugins = new List<IPlugin>();
-                }
-
-                return this.plugins;
-            }
+            get { return this.plugins ?? (this.plugins = new List<IPlugin>()); }
         }
 
         public void OnConfigRead(IAssemblyInfo config)
@@ -567,19 +549,19 @@ namespace Bridge.Translator
             return false;
         }
 
-        public void BeforeEmit(IEmitter emitter, ITranslator translator)
+        public void BeforeEmit(ITranslator translator)
         {
             foreach (var plugin in this.Parts)
             {
-                plugin.BeforeEmit(emitter, translator);
+                plugin.BeforeEmit(translator);
             }
         }
 
-        public void AfterEmit(IEmitter emitter, ITranslator translator)
+        public void AfterEmit(ITranslator translator)
         {
             foreach (var plugin in this.Parts)
             {
-                plugin.AfterEmit(emitter, translator);
+                plugin.AfterEmit(translator);
             }
         }
 
@@ -591,35 +573,35 @@ namespace Bridge.Translator
             }
         }
 
-        public void BeforeTypesEmit(IEmitter emitter, IList<ITypeInfo> types)
+        public void BeforeTypesEmit(ITranslator translator, IEnumerable<ITypeInfo> types)
         {
             foreach (var plugin in this.Parts)
             {
-                plugin.BeforeTypesEmit(emitter, types);
+                plugin.BeforeTypesEmit(translator, types);
             }
         }
 
-        public void AfterTypesEmit(IEmitter emitter, IList<ITypeInfo> types)
+        public void AfterTypesEmit(ITranslator translator, IEnumerable<ITypeInfo> types)
         {
             foreach (var plugin in this.Parts)
             {
-                plugin.AfterTypesEmit(emitter, types);
+                plugin.AfterTypesEmit(translator, types);
             }
         }
 
-        public void BeforeTypeEmit(IEmitter emitter, ITypeInfo type)
+        public void BeforeTypeEmit(ITranslator translator, ITypeInfo type)
         {
             foreach (var plugin in this.Parts)
             {
-                plugin.BeforeTypeEmit(emitter, type);
+                plugin.BeforeTypeEmit(translator, type);
             }
         }
 
-        public void AfterTypeEmit(IEmitter emitter, ITypeInfo type)
+        public void AfterTypeEmit(ITranslator translator, ITypeInfo type)
         {
             foreach (var plugin in this.Parts)
             {
-                plugin.AfterTypeEmit(emitter, type);
+                plugin.AfterTypeEmit(translator, type);
             }
         }
     }

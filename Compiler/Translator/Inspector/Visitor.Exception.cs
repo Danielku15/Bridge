@@ -1,840 +1,536 @@
 using Bridge.Contract;
 using ICSharpCode.NRefactory.CSharp;
 using System;
+using System.Collections.Generic;
+using ICSharpCode.NRefactory.TypeSystem;
+using Object.Net.Utilities;
 
 namespace Bridge.Translator
 {
     public abstract partial class Visitor : IAstVisitor
     {
-        public virtual IVisitorException CreateException(AstNode node, string message)
-        {
-            if (String.IsNullOrEmpty(message))
-            {
-                message = String.Format("Language construction {0} is not supported", node.GetType().Name);
-            }
-
-            return new EmitterException(node, message);
-        }
-
-        public virtual IVisitorException CreateException(AstNode node)
-        {
-            return this.CreateException(node, null);
-        }
-
-        private bool throwException = true;
-
-        public virtual bool ThrowException
-        {
-            get
-            {
-                return this.throwException;
-            }
-            set
-            {
-                this.throwException = value;
-            }
-        }
-
-        public virtual void VisitAccessor(Accessor accessor)
+        public virtual void ThrowIfNeeded(AstNode node, string message = null)
         {
             if (this.ThrowException)
             {
-                throw (System.Exception)this.CreateException(accessor);
+                this.Throw(node, message);
             }
+        }
+        public virtual void Throw(AstNode node, string message = null)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                message = $"Language construction {node.GetType().Name} is not supported";
+            }
+
+            throw new EmitterException(node, message);
+        }
+
+        public virtual bool ThrowException { get; set; } = true;
+
+        public virtual void VisitAccessor(Accessor accessor)
+        {
+            this.ThrowIfNeeded(accessor);
         }
 
         public virtual void VisitAnonymousMethodExpression(AnonymousMethodExpression anonymousMethodExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(anonymousMethodExpression);
-            }
+            this.ThrowIfNeeded(anonymousMethodExpression);
         }
 
         public virtual void VisitAnonymousTypeCreateExpression(AnonymousTypeCreateExpression anonymousTypeCreateExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(anonymousTypeCreateExpression);
-            }
+            this.ThrowIfNeeded(anonymousTypeCreateExpression);
         }
 
         public virtual void VisitArrayCreateExpression(ArrayCreateExpression arrayCreateExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(arrayCreateExpression);
-            }
+            this.ThrowIfNeeded(arrayCreateExpression);
         }
 
         public virtual void VisitArrayInitializerExpression(ArrayInitializerExpression arrayInitializerExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(arrayInitializerExpression);
-            }
+            this.ThrowIfNeeded(arrayInitializerExpression);
         }
 
         public virtual void VisitArraySpecifier(ArraySpecifier arraySpecifier)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(arraySpecifier);
-            }
+            this.ThrowIfNeeded(arraySpecifier);
         }
 
         public virtual void VisitAsExpression(AsExpression asExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(asExpression);
-            }
+            this.ThrowIfNeeded(asExpression);
         }
 
         public virtual void VisitAssignmentExpression(AssignmentExpression assignmentExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(assignmentExpression);
-            }
+            this.ThrowIfNeeded(assignmentExpression);
         }
 
         public virtual void VisitAttribute(ICSharpCode.NRefactory.CSharp.Attribute attribute)
         {
-            throw new NotImplementedException();
+            this.ThrowIfNeeded(attribute);
         }
 
         public virtual void VisitBaseReferenceExpression(BaseReferenceExpression baseReferenceExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(baseReferenceExpression);
-            }
+            this.ThrowIfNeeded(baseReferenceExpression);
         }
 
         public virtual void VisitBinaryOperatorExpression(BinaryOperatorExpression binaryOperatorExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(binaryOperatorExpression);
-            }
+            this.ThrowIfNeeded(binaryOperatorExpression);
         }
 
         public virtual void VisitBlockStatement(BlockStatement blockStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(blockStatement);
-            }
+            this.ThrowIfNeeded(blockStatement);
         }
 
         public virtual void VisitBreakStatement(BreakStatement breakStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(breakStatement);
-            }
+            this.ThrowIfNeeded(breakStatement);
         }
 
         public virtual void VisitCaseLabel(CaseLabel caseLabel)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(caseLabel);
-            }
+            this.ThrowIfNeeded(caseLabel);
         }
 
         public virtual void VisitCastExpression(CastExpression castExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(castExpression);
-            }
+            this.ThrowIfNeeded(castExpression);
         }
 
         public virtual void VisitCatchClause(CatchClause catchClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(catchClause);
-            }
+            this.ThrowIfNeeded(catchClause);
         }
 
         public virtual void VisitCheckedExpression(CheckedExpression checkedExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(checkedExpression);
-            }
+            this.ThrowIfNeeded(checkedExpression);
         }
 
         public virtual void VisitCheckedStatement(CheckedStatement checkedStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(checkedStatement);
-            }
+            this.ThrowIfNeeded(checkedStatement);
         }
 
         public virtual void VisitComposedType(ComposedType composedType)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(composedType);
-            }
+            this.ThrowIfNeeded(composedType);
         }
 
         public virtual void VisitConditionalExpression(ConditionalExpression conditionalExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(conditionalExpression);
-            }
+            this.ThrowIfNeeded(conditionalExpression);
         }
 
         public virtual void VisitConstructorDeclaration(ConstructorDeclaration constructorDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(constructorDeclaration);
-            }
+            this.ThrowIfNeeded(constructorDeclaration);
         }
 
         public virtual void VisitConstructorInitializer(ConstructorInitializer constructorInitializer)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(constructorInitializer);
-            }
+            this.ThrowIfNeeded(constructorInitializer);
         }
 
         public virtual void VisitContinueStatement(ContinueStatement continueStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(continueStatement);
-            }
+            this.ThrowIfNeeded(continueStatement);
         }
 
         public virtual void VisitCustomEventDeclaration(CustomEventDeclaration customEventDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(customEventDeclaration);
-            }
+            this.ThrowIfNeeded(customEventDeclaration);
         }
 
         public virtual void VisitDelegateDeclaration(DelegateDeclaration delegateDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(delegateDeclaration);
-            }
+            this.ThrowIfNeeded(delegateDeclaration);
         }
 
         public virtual void VisitDestructorDeclaration(DestructorDeclaration destructorDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(destructorDeclaration);
-            }
+            this.ThrowIfNeeded(destructorDeclaration);
         }
 
         public virtual void VisitDirectionExpression(DirectionExpression directionExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(directionExpression);
-            }
+            this.ThrowIfNeeded(directionExpression);
         }
 
         public virtual void VisitDoWhileStatement(DoWhileStatement doWhileStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(doWhileStatement);
-            }
+            this.ThrowIfNeeded(doWhileStatement);
         }
 
         public virtual void VisitDocumentationReference(DocumentationReference documentationReference)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(documentationReference);
-            }
+            this.ThrowIfNeeded(documentationReference);
         }
 
         public virtual void VisitEmptyStatement(EmptyStatement emptyStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(emptyStatement);
-            }
+            this.ThrowIfNeeded(emptyStatement);
         }
 
         public virtual void VisitEnumMemberDeclaration(EnumMemberDeclaration enumMemberDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(enumMemberDeclaration);
-            }
+            this.ThrowIfNeeded(enumMemberDeclaration);
         }
 
         public virtual void VisitEventDeclaration(EventDeclaration eventDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(eventDeclaration);
-            }
+            this.ThrowIfNeeded(eventDeclaration);
         }
 
         public virtual void VisitExpressionStatement(ExpressionStatement expressionStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(expressionStatement);
-            }
+            this.ThrowIfNeeded(expressionStatement);
         }
 
         public virtual void VisitExternAliasDeclaration(ExternAliasDeclaration externAliasDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(externAliasDeclaration);
-            }
+            this.ThrowIfNeeded(externAliasDeclaration);
         }
 
         public virtual void VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(fieldDeclaration);
-            }
+            this.ThrowIfNeeded(fieldDeclaration);
         }
 
         public virtual void VisitFixedFieldDeclaration(FixedFieldDeclaration fixedFieldDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(fixedFieldDeclaration);
-            }
+            this.ThrowIfNeeded(fixedFieldDeclaration);
         }
 
         public virtual void VisitFixedStatement(FixedStatement fixedStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(fixedStatement);
-            }
+            this.ThrowIfNeeded(fixedStatement);
         }
 
         public virtual void VisitFixedVariableInitializer(FixedVariableInitializer fixedVariableInitializer)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(fixedVariableInitializer);
-            }
+            this.ThrowIfNeeded(fixedVariableInitializer);
         }
 
         public virtual void VisitForStatement(ForStatement forStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(forStatement);
-            }
+            this.ThrowIfNeeded(forStatement);
         }
 
         public virtual void VisitForeachStatement(ForeachStatement foreachStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(foreachStatement);
-            }
+            this.ThrowIfNeeded(foreachStatement);
         }
 
         public virtual void VisitGotoCaseStatement(GotoCaseStatement gotoCaseStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(gotoCaseStatement);
-            }
+            this.ThrowIfNeeded(gotoCaseStatement);
         }
 
         public virtual void VisitGotoDefaultStatement(GotoDefaultStatement gotoDefaultStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(gotoDefaultStatement);
-            }
+            this.ThrowIfNeeded(gotoDefaultStatement);
         }
 
         public virtual void VisitGotoStatement(GotoStatement gotoStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(gotoStatement);
-            }
+            this.ThrowIfNeeded(gotoStatement);
         }
 
         public virtual void VisitIdentifierExpression(IdentifierExpression identifierExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(identifierExpression);
-            }
+            this.ThrowIfNeeded(identifierExpression);
         }
 
         public virtual void VisitIfElseStatement(IfElseStatement ifElseStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(ifElseStatement);
-            }
+            this.ThrowIfNeeded(ifElseStatement);
         }
 
         public virtual void VisitIndexerDeclaration(IndexerDeclaration indexerDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(indexerDeclaration);
-            }
+            this.ThrowIfNeeded(indexerDeclaration);
         }
 
         public virtual void VisitIndexerExpression(IndexerExpression indexerExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(indexerExpression);
-            }
+            this.ThrowIfNeeded(indexerExpression);
         }
 
         public virtual void VisitInvocationExpression(InvocationExpression invocationExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(invocationExpression);
-            }
+            this.ThrowIfNeeded(invocationExpression);
         }
 
         public virtual void VisitIsExpression(IsExpression isExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(isExpression);
-            }
+            this.ThrowIfNeeded(isExpression);
         }
 
         public virtual void VisitLabelStatement(LabelStatement labelStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(labelStatement);
-            }
+            this.ThrowIfNeeded(labelStatement);
         }
 
         public virtual void VisitLambdaExpression(LambdaExpression lambdaExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(lambdaExpression);
-            }
+            this.ThrowIfNeeded(lambdaExpression);
         }
 
         public virtual void VisitLockStatement(LockStatement lockStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(lockStatement);
-            }
+            this.ThrowIfNeeded(lockStatement);
         }
 
         public virtual void VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(memberReferenceExpression);
-            }
+            this.ThrowIfNeeded(memberReferenceExpression);
         }
 
         public virtual void VisitMethodDeclaration(MethodDeclaration methodDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(methodDeclaration);
-            }
+            this.ThrowIfNeeded(methodDeclaration);
         }
 
         public virtual void VisitNamedArgumentExpression(NamedArgumentExpression namedArgumentExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(namedArgumentExpression);
-            }
+            this.ThrowIfNeeded(namedArgumentExpression);
         }
 
         public virtual void VisitNamedExpression(NamedExpression namedExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(namedExpression);
-            }
+            this.ThrowIfNeeded(namedExpression);
         }
 
         public virtual void VisitNamespaceDeclaration(NamespaceDeclaration namespaceDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(namespaceDeclaration);
-            }
+            this.ThrowIfNeeded(namespaceDeclaration);
         }
 
         public virtual void VisitObjectCreateExpression(ObjectCreateExpression objectCreateExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(objectCreateExpression);
-            }
+            this.ThrowIfNeeded(objectCreateExpression);
         }
 
         public virtual void VisitParameterDeclaration(ParameterDeclaration parameterDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(parameterDeclaration);
-            }
+            this.ThrowIfNeeded(parameterDeclaration);
         }
 
         public virtual void VisitParenthesizedExpression(ParenthesizedExpression parenthesizedExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(parenthesizedExpression);
-            }
+            this.ThrowIfNeeded(parenthesizedExpression);
         }
 
         public virtual void VisitPatternPlaceholder(AstNode placeholder, ICSharpCode.NRefactory.PatternMatching.Pattern pattern)
         {
-            throw new NotImplementedException();
+            this.ThrowIfNeeded(placeholder);
         }
 
         public virtual void VisitPointerReferenceExpression(PointerReferenceExpression pointerReferenceExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(pointerReferenceExpression);
-            }
+            this.ThrowIfNeeded(pointerReferenceExpression);
         }
 
         public virtual void VisitPrimitiveExpression(PrimitiveExpression primitiveExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(primitiveExpression);
-            }
+            this.ThrowIfNeeded(primitiveExpression);
         }
 
         public virtual void VisitPropertyDeclaration(PropertyDeclaration propertyDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(propertyDeclaration);
-            }
+            this.ThrowIfNeeded(propertyDeclaration);
         }
 
         public virtual void VisitQueryContinuationClause(QueryContinuationClause queryContinuationClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryContinuationClause);
-            }
+            this.ThrowIfNeeded(queryContinuationClause);
         }
 
         public virtual void VisitQueryExpression(QueryExpression queryExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryExpression);
-            }
+            this.ThrowIfNeeded(queryExpression);
         }
 
         public virtual void VisitQueryFromClause(QueryFromClause queryFromClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryFromClause);
-            }
+            this.ThrowIfNeeded(queryFromClause);
         }
 
         public virtual void VisitQueryGroupClause(QueryGroupClause queryGroupClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryGroupClause);
-            }
+            this.ThrowIfNeeded(queryGroupClause);
         }
 
         public virtual void VisitQueryJoinClause(QueryJoinClause queryJoinClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryJoinClause);
-            }
+            this.ThrowIfNeeded(queryJoinClause);
         }
 
         public virtual void VisitQueryLetClause(QueryLetClause queryLetClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryLetClause);
-            }
+            this.ThrowIfNeeded(queryLetClause);
         }
 
         public virtual void VisitQueryOrderClause(QueryOrderClause queryOrderClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryOrderClause);
-            }
+            this.ThrowIfNeeded(queryOrderClause);
         }
 
         public virtual void VisitQueryOrdering(QueryOrdering queryOrdering)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryOrdering);
-            }
+            this.ThrowIfNeeded(queryOrdering);
         }
 
         public virtual void VisitQuerySelectClause(QuerySelectClause querySelectClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(querySelectClause);
-            }
+            this.ThrowIfNeeded(querySelectClause);
         }
 
         public virtual void VisitQueryWhereClause(QueryWhereClause queryWhereClause)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(queryWhereClause);
-            }
+            this.ThrowIfNeeded(queryWhereClause);
         }
 
         public virtual void VisitReturnStatement(ReturnStatement returnStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(returnStatement);
-            }
+            this.ThrowIfNeeded(returnStatement);
         }
 
         public virtual void VisitSizeOfExpression(SizeOfExpression sizeOfExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(sizeOfExpression);
-            }
+            this.ThrowIfNeeded(sizeOfExpression);
         }
 
         public virtual void VisitStackAllocExpression(StackAllocExpression stackAllocExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(stackAllocExpression);
-            }
+            this.ThrowIfNeeded(stackAllocExpression);
         }
 
         public virtual void VisitSwitchSection(SwitchSection switchSection)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(switchSection);
-            }
+            this.ThrowIfNeeded(switchSection);
         }
 
         public virtual void VisitSwitchStatement(SwitchStatement switchStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(switchStatement);
-            }
+            this.ThrowIfNeeded(switchStatement);
         }
 
         public virtual void VisitSyntaxTree(SyntaxTree syntaxTree)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(syntaxTree);
-            }
+            this.ThrowIfNeeded(syntaxTree);
         }
 
         public virtual void VisitText(TextNode textNode)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(textNode);
-            }
+            this.ThrowIfNeeded(textNode);
         }
 
         public virtual void VisitThisReferenceExpression(ThisReferenceExpression thisReferenceExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(thisReferenceExpression);
-            }
+            this.ThrowIfNeeded(thisReferenceExpression);
         }
 
         public virtual void VisitThrowStatement(ThrowStatement throwStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(throwStatement);
-            }
+            this.ThrowIfNeeded(throwStatement);
         }
 
         public virtual void VisitTryCatchStatement(TryCatchStatement tryCatchStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(tryCatchStatement);
-            }
+            this.ThrowIfNeeded(tryCatchStatement);
         }
 
         public virtual void VisitTypeDeclaration(TypeDeclaration typeDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(typeDeclaration);
-            }
+            this.ThrowIfNeeded(typeDeclaration);
         }
 
         public virtual void VisitTypeOfExpression(TypeOfExpression typeOfExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(typeOfExpression);
-            }
+            this.ThrowIfNeeded(typeOfExpression);
         }
 
         public virtual void VisitTypeReferenceExpression(TypeReferenceExpression typeReferenceExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(typeReferenceExpression);
-            }
+            this.ThrowIfNeeded(typeReferenceExpression);
         }
 
         public virtual void VisitUnaryOperatorExpression(UnaryOperatorExpression unaryOperatorExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(unaryOperatorExpression);
-            }
+            this.ThrowIfNeeded(unaryOperatorExpression);
         }
 
         public virtual void VisitUncheckedExpression(UncheckedExpression uncheckedExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(uncheckedExpression);
-            }
+            this.ThrowIfNeeded(uncheckedExpression);
         }
 
         public virtual void VisitUncheckedStatement(UncheckedStatement uncheckedStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(uncheckedStatement);
-            }
+            this.ThrowIfNeeded(uncheckedStatement);
         }
 
         public virtual void VisitUndocumentedExpression(UndocumentedExpression undocumentedExpression)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(undocumentedExpression);
-            }
+            this.ThrowIfNeeded(undocumentedExpression);
         }
 
         public virtual void VisitUnsafeStatement(UnsafeStatement unsafeStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(unsafeStatement);
-            }
+            this.ThrowIfNeeded(unsafeStatement);
         }
 
         public virtual void VisitUsingDeclaration(UsingDeclaration usingDeclaration)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(usingDeclaration);
-            }
+            this.ThrowIfNeeded(usingDeclaration);
         }
 
         public virtual void VisitUsingStatement(UsingStatement usingStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(usingStatement);
-            }
+            this.ThrowIfNeeded(usingStatement);
         }
 
         public virtual void VisitVariableDeclarationStatement(VariableDeclarationStatement variableDeclarationStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(variableDeclarationStatement);
-            }
+            this.ThrowIfNeeded(variableDeclarationStatement);
         }
 
         public virtual void VisitVariableInitializer(VariableInitializer variableInitializer)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(variableInitializer);
-            }
+            this.ThrowIfNeeded(variableInitializer);
         }
 
         public virtual void VisitWhileStatement(WhileStatement whileStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(whileStatement);
-            }
+            this.ThrowIfNeeded(whileStatement);
         }
 
         public virtual void VisitWhitespace(WhitespaceNode whitespaceNode)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(whitespaceNode);
-            }
+            this.ThrowIfNeeded(whitespaceNode);
         }
 
         public virtual void VisitYieldBreakStatement(YieldBreakStatement yieldBreakStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(yieldBreakStatement);
-            }
+            this.ThrowIfNeeded(yieldBreakStatement);
         }
 
         public virtual void VisitYieldReturnStatement(YieldReturnStatement yieldReturnStatement)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(yieldReturnStatement);
-            }
+            this.ThrowIfNeeded(yieldReturnStatement);
         }
 
         public virtual void VisitErrorNode(AstNode errorNode)
         {
-            if (this.ThrowException)
-            {
-                throw (System.Exception)this.CreateException(errorNode);
-            }
+            this.ThrowIfNeeded(errorNode);
         }
     }
 }

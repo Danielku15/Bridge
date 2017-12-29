@@ -1,7 +1,6 @@
 ﻿using Bridge.Contract;
 using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.Semantics;
-using System.Linq;
 using ICSharpCode.NRefactory.TypeSystem;
 
 namespace Bridge.Translator.TypeScript
@@ -28,7 +27,7 @@ namespace Bridge.Translator.TypeScript
 
         protected virtual void EmitPropertyMethod(PropertyDeclaration propertyDeclaration)
         {
-            var memberResult = this.Emitter.Resolver.ResolveNode(propertyDeclaration, this.Emitter) as MemberResolveResult;
+            var memberResult = this.Emitter.Resolver.ResolveNode(propertyDeclaration) as MemberResolveResult;
             var isInterface = memberResult != null && memberResult.Member.DeclaringType.Kind == TypeKind.Interface;
 
             if (!isInterface && !propertyDeclaration.HasModifier(Modifiers.Public))
@@ -62,7 +61,7 @@ namespace Bridge.Translator.TypeScript
             string name = Helpers.GetPropertyRef(memberResult.Member, this.Emitter, false, false, ignoreInterface);
             this.Write(name);
             this.WriteColon();
-            name = BridgeTypes.ToTypeScriptName(p.ReturnType, this.Emitter);
+            name = this.Emitter.ToTypeScriptName(p.ReturnType);
             this.Write(name);
             this.WriteSemiColon();
             this.WriteNewLine();

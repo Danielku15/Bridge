@@ -9,11 +9,11 @@ namespace Bridge.Translator
     {
         public virtual void RunEvent(string e)
         {
-            var info = new ProcessStartInfo()
+            var info = new ProcessStartInfo
             {
-                FileName = e
+                FileName = e,
+                WindowStyle = ProcessWindowStyle.Hidden
             };
-            info.WindowStyle = ProcessWindowStyle.Hidden;
 
             if (!File.Exists(e))
             {
@@ -23,11 +23,15 @@ namespace Bridge.Translator
 
             using (var p = Process.Start(info))
             {
-                p.WaitForExit();
-
-                if (p.ExitCode != 0)
+                if (p != null)
                 {
-                    throw new TranslatorException("Error: The command '" + e + "' returned with exit code: " + p.ExitCode);
+                    p.WaitForExit();
+
+                    if (p.ExitCode != 0)
+                    {
+                        throw new TranslatorException("Error: The command '" + e + "' returned with exit code: " +
+                                                      p.ExitCode);
+                    }
                 }
             }
         }

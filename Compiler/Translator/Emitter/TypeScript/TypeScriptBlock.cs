@@ -1,12 +1,4 @@
 using Bridge.Contract;
-using Bridge.Contract.Constants;
-
-using Mono.Cecil;
-using Object.Net.Utilities;
-
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using ICSharpCode.NRefactory.CSharp;
 
 namespace Bridge.Translator.TypeScript
@@ -18,13 +10,7 @@ namespace Bridge.Translator.TypeScript
         {
         }
 
-        public override int Level
-        {
-            get
-            {
-                return base.Level - this.Emitter.InitialLevel;
-            }
-        }
+        public override int Level => base.Level - this.Emitter.InitialLevel;
 
         protected override void DoEmit()
         {

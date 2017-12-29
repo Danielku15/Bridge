@@ -26,7 +26,6 @@ namespace Bridge.Translator
         private List<AstNode> AwaitExpressions
         {
             get;
-            set;
         }
 
         public List<AstNode> GetAwaitExpressions()
@@ -69,7 +68,7 @@ namespace Bridge.Translator
         {
             if (this.Emitter != null && binaryOperatorExpression.GetParent<SyntaxTree>() != null)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(binaryOperatorExpression, this.Emitter) as OperatorResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode<OperatorResolveResult>(binaryOperatorExpression);
                 if (rr != null && rr.Type.IsKnownType(KnownTypeCode.Boolean))
                 {
                     var count = this.AwaitExpressions.Count;

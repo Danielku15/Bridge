@@ -83,7 +83,7 @@
       <Link>Rule\RulesAttribute.cs</Link>
     </Compile>
     <Compile Include="AbstractPlugin.cs" />
-    <Compile Include="BridgeType.cs" />
+    <Compile Include="ITypeInfoCollection.cs" />
     <Compile Include="Config\StringBoolJsonConverter.cs" />
     <Compile Include="Config\NamedFunctionMode.cs" />
     <Compile Include="Config\HtmlConfig.cs" />
@@ -155,7 +155,6 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="ITypeInfo.cs" />
-    <Compile Include="XmlToJsDoc.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

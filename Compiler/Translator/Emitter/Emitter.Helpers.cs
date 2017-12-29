@@ -3,7 +3,6 @@ using Bridge.Contract.Constants;
 using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.Semantics;
 using ICSharpCode.NRefactory.TypeSystem;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +19,7 @@ namespace Bridge.Translator
             {
                 if (expression.Parent != null)
                 {
-                    var rr = emitter.Resolver.ResolveNode(expression, emitter);
+                    var rr = emitter.Resolver.ResolveNode(expression);
                     var conversion = emitter.Resolver.Resolver.GetConversion(expression);
                     var expectedType = emitter.Resolver.Resolver.GetExpectedType(expression);
 
@@ -37,16 +36,10 @@ namespace Bridge.Translator
             return value;
         }
 
-        public virtual string ToJavaScript(object value)
-        {
-            return JsonConvert.SerializeObject(value);
-        }
-
         public virtual Tuple<bool, bool, string> GetInlineCode(MemberReferenceExpression node)
         {
             var member = LiftNullableMember(node);
             var info = GetInlineCodeFromMember(member, node);
-
             return WrapNullableMember(info, member, node);
         }
 
@@ -67,7 +60,7 @@ namespace Bridge.Translator
         {
             if (member == null)
             {
-                var resolveResult = this.Resolver.ResolveNode(node, this);
+                var resolveResult = this.Resolver.ResolveNode(node);
                 var memberResolveResult = resolveResult as MemberResolveResult;
 
                 if (memberResolveResult == null)
@@ -125,7 +118,7 @@ namespace Bridge.Translator
 
         private IMember LiftNullableMember(MemberReferenceExpression target)
         {
-            var targetrr = this.Resolver.ResolveNode(target.Target, this);
+            var targetrr = this.Resolver.ResolveNode(target.Target);
             IMember member = null;
             if (targetrr.Type.IsKnownType(KnownTypeCode.NullableOfT))
             {
@@ -140,7 +133,7 @@ namespace Bridge.Translator
                 {
                     if (target.Parent is InvocationExpression)
                     {
-                        var rr = this.Resolver.ResolveNode(target.Parent, this) as InvocationResolveResult;
+                        var rr = this.Resolver.ResolveNode(target.Parent) as InvocationResolveResult;
                         if (rr != null)
                         {
                             typeArg = rr.Arguments.First().Type;
@@ -176,7 +169,7 @@ namespace Bridge.Translator
 
         public virtual bool IsForbiddenInvocation(InvocationExpression node)
         {
-            var resolveResult = this.Resolver.ResolveNode(node, this);
+            var resolveResult = this.Resolver.ResolveNode(node);
             var memberResolveResult = resolveResult as MemberResolveResult;
 
             if (memberResolveResult == null)
@@ -284,7 +277,7 @@ namespace Bridge.Translator
                         else
                         {
                             this._stack.Push(type);
-                            name = BridgeTypes.ToJsName(type, this);
+                            name = this.ToJsName(type);
                             var i = name.LastIndexOf(".");
 
                             if (i > -1)
@@ -325,12 +318,12 @@ namespace Bridge.Translator
 
                 if (type.DeclaringType != null)
                 {
-                    name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + BridgeTypes.GetParentNames(this, type);
+                    name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + this.GetParentNames(type);
                 }
 
 
                 var typeName = this.GetTypeName(type);
-                name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + BridgeTypes.ConvertName(changeCase ? typeName.ToLowerCamelCase() : typeName);
+                name = (string.IsNullOrEmpty(name) ? "" : (name + ".")) + (changeCase ? typeName.ToLowerCamelCase() : typeName).ConvertName();
 
                 return name;
             }
@@ -347,8 +340,7 @@ namespace Bridge.Translator
             return null;
         }
 
-
-        public string GetLiteralEntityName(ICSharpCode.NRefactory.TypeSystem.IEntity member)
+        public string GetLiteralEntityName(IEntity member)
         {
             var semantic = NameSemantic.Create(member, this);
             semantic.IsObjectLiteral = true;
@@ -357,7 +349,7 @@ namespace Bridge.Translator
 
         public virtual string GetEntityName(EntityDeclaration entity)
         {
-            var rr = this.Resolver.ResolveNode(entity, this) as MemberResolveResult;
+            var rr = this.Resolver.ResolveNode(entity) as MemberResolveResult;
 
             if (rr != null)
             {
@@ -373,7 +365,7 @@ namespace Bridge.Translator
 
             if (entity.Parent != null && entity.GetParent<SyntaxTree>() != null)
             {
-                var rr = this.Resolver.ResolveNode(entity, this) as LocalResolveResult;
+                var rr = this.Resolver.ResolveNode(entity) as LocalResolveResult;
                 if (rr != null)
                 {
                     var iparam = rr.Variable as IParameter;
@@ -425,7 +417,7 @@ namespace Bridge.Translator
 
         public virtual string GetInline(EntityDeclaration method)
         {
-            var mrr = this.Resolver.ResolveNode(method, this) as MemberResolveResult;
+            var mrr = this.Resolver.ResolveNode<MemberResolveResult>(method);
 
             if (mrr != null)
             {
@@ -448,12 +440,7 @@ namespace Bridge.Translator
                 entity = this.IsAssignment ? (this.AssignmentType == AssignmentOperatorType.Add ? ev.AddAccessor : ev.RemoveAccessor) : ev.InvokeAccessor;
             }
 
-            if (entity != null)
-            {
-                return entity.GetTemplate(this);
-            }
-
-            return null;
+            return entity?.GetTemplate(this);
         }
 
         protected virtual bool IsInlineMethod(IEntity entity)
@@ -484,8 +471,8 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    var rr = this.Resolver.ResolveNode(arg, this) as ConstantResolveResult;
-                    if (rr != null && rr.ConstantValue != null)
+                    var rr = this.Resolver.ResolveNode<ConstantResolveResult>(arg);
+                    if (rr?.ConstantValue != null)
                     {
                         value = rr.ConstantValue.ToString();
                     }
@@ -499,7 +486,7 @@ namespace Bridge.Translator
 
         public virtual bool IsNativeMember(string fullName)
         {
-            return fullName.StartsWith(Bridge.Translator.Translator.Bridge_ASSEMBLY_DOT, StringComparison.Ordinal) || fullName.StartsWith("System.", StringComparison.Ordinal);
+            return fullName.StartsWith(CS.Bridge.DOTNAME, StringComparison.Ordinal) || fullName.StartsWith("System.", StringComparison.Ordinal);
         }
 
 

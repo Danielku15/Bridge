@@ -18,11 +18,11 @@ namespace Bridge.Contract
     /// </summary>
     public static class AttributeRegistry
     {
-        public static IAssemblyInfo AssemblyInfo { get; private set; }
+        public static ITranslator Translator { get; private set; }
 
-        public static void Reset(IAssemblyInfo assemblyInfo)
+        public static void Reset(ITranslator translator)
         {
-            AssemblyInfo = assemblyInfo;
+            Translator = translator;
             _attributes = new Dictionary<string, List<IAttribute>>();
         }
 
@@ -93,10 +93,20 @@ namespace Bridge.Contract
             }
 
             var asm = typeDefinition.ParentAssembly;
-            attr = asm.GetAttribute(CS.Attributes.MODULE);
+            return asm.GetModule();
+        }
+
+        public static Module GetModule(this IAssembly assembly)
+        {
+            var attr = assembly.GetAttribute(CS.Attributes.MODULE);
             if (attr != null)
             {
                 return ReadModuleFromAttribute(attr);
+            }
+
+            if (Translator.IsCurrentAssembly(assembly))
+            {
+                return Translator.AssemblyInfo.Module;
             }
 
             return null;
@@ -110,6 +120,13 @@ namespace Bridge.Contract
                 return null;
             }
 
+            
+
+            return ReadModuleDependencyFromAttribute(attr);
+        }
+
+        private static ModuleDependency ReadModuleDependencyFromAttribute(IAttribute attr)
+        {
             ModuleDependency dependency = new ModuleDependency();
             var obj = attr.PositionalArguments[0].ConstantValue;
             dependency.DependencyName = obj is string ? obj.ToString() : "";
@@ -119,8 +136,12 @@ namespace Bridge.Contract
                 obj = attr.PositionalArguments[1].ConstantValue;
                 dependency.VariableName = obj is string ? obj.ToString() : "";
             }
-
             return dependency;
+        }
+
+        public static IEnumerable<ModuleDependency> GetModuleDependencies(this IAssembly typeDefinition)
+        {
+            return typeDefinition.GetAttributes(CS.Attributes.MODULE_DEPENDENCY).Select(ReadModuleDependencyFromAttribute);
         }
 
         private static Module ReadModuleFromAttribute(IAttribute attr)
@@ -231,7 +252,8 @@ namespace Bridge.Contract
 
         public static bool IsIgnoreCast(this ITypeDefinition typeDef)
         {
-            if (AssemblyInfo != null && AssemblyInfo.IgnoreCast)
+            if (Translator.AssemblyInfo.IgnoreCast && 
+                Translator.IsInCurrentAssembly(typeDef))
             {
                 return true;
             }
@@ -460,6 +482,65 @@ namespace Bridge.Contract
             return rule;
         }
 
+        public static void ReadReflectionInfo(this IAssembly assembly, IReflectionConfig config)
+        {
+            var attr = assembly.GetAttribute(CS.Attributes.REFLECTABLE);
+            if (attr == null)
+            {
+                return;
+            }
+
+            if (attr.PositionalArguments.Count > 0)
+            {
+                if (attr.PositionalArguments.Count > 1)
+                {
+                    var list = new List<MemberAccessibility>();
+                    for (int i = 0; i < attr.PositionalArguments.Count; i++)
+                    {
+                        object v = attr.PositionalArguments[i].ConstantValue;
+                        list.Add((MemberAccessibility)(int)v);
+                    }
+
+                    config.MemberAccessibility = list.ToArray();
+                }
+                else
+                {
+                    object v = attr.PositionalArguments[0].ConstantValue;
+                    if (v is bool)
+                    {
+                        config.Disabled = !(bool)v;
+                    }
+                    else if (v is string)
+                    {
+                        if (string.IsNullOrEmpty(config.Filter))
+                        {
+                            config.Filter = v.ToString();
+                        }
+                        else
+                        {
+                            config.Filter += ";" + v.ToString();
+                        }
+                    }
+                    else if (attr.PositionalArguments[0].Type.FullName == CS.Types.Bridge_TypeAccessibility)
+                    {
+                        config.TypeAccessibility = (TypeAccessibility)(int)v;
+                    }
+                    else if (v is int)
+                    {
+                        config.MemberAccessibility = new[] { (MemberAccessibility)(int)v };
+                    }
+                    else if (v is int[])
+                    {
+                        config.MemberAccessibility = ((int[])v).Cast<MemberAccessibility>().ToArray();
+                    }
+                }
+            }
+            else
+            {
+                config.Disabled = false;
+            }
+        }
+
         public static bool IsReflectable(this IEntity entity, bool ifHasAttribute, SyntaxTree tree)
         {
             if (entity.IsNonScriptable())
@@ -545,18 +626,21 @@ namespace Bridge.Contract
                     }
                 }
 
-                var memberAccessibility = AssemblyInfo.Reflection.MemberAccessibility;
-                if (memberAccessibility == null || memberAccessibility.Length == 0)
+                if (Translator.IsInCurrentAssembly(entity))
                 {
-                    memberAccessibility = new[] { ifHasAttribute ? MemberAccessibility.None : MemberAccessibility.All };
-
-                    if (ifHasAttribute && member.GetScriptableAttributes(tree).Any())
+                    var memberAccessibility = Translator.AssemblyInfo.Reflection.MemberAccessibility;
+                    if (memberAccessibility == null || memberAccessibility.Length == 0)
                     {
-                        memberAccessibility = new[] { MemberAccessibility.All };
-                    }
-                }
+                        memberAccessibility = new[]
+                            {ifHasAttribute ? MemberAccessibility.None : MemberAccessibility.All};
 
-                return IsMemberReflectable(member, memberAccessibility);
+                        if (ifHasAttribute && member.GetScriptableAttributes(tree).Any())
+                        {
+                            memberAccessibility = new[] {MemberAccessibility.All};
+                        }
+                    }
+                    return IsMemberReflectable(member, memberAccessibility);
+                }
             }
 
             return false;
@@ -1176,7 +1260,7 @@ namespace Bridge.Contract
                     }
                     else
                     {
-                        return !symbols.Intersect(AssemblyInfo.DefineConstants).Any();
+                        return !symbols.Intersect(Translator.AssemblyInfo.DefineConstants).Any();
                     }
                 }
 
@@ -1252,6 +1336,12 @@ namespace Bridge.Contract
             return Convert.ToInt32(attr.PositionalArguments[0].ConstantValue);
         }
 
+        public static bool IsExternalInterface(this ITypeDefinition typeDefinition)
+        {
+            bool isNative;
+            return IsExternalInterface(typeDefinition, out isNative);
+        }
+
         public static bool IsExternalInterface(this ITypeDefinition typeDefinition, out bool isNative)
         {
             var attr = typeDefinition.GetAttributes().FirstOrDefault(a => a.Constructor != null && (a.Constructor.DeclaringType.FullName == CS.Attributes.EXTERNAL_INTERFACE));
@@ -1271,7 +1361,7 @@ namespace Bridge.Contract
             return attr != null;
         }
 
-        public static IExternalInterface IsExternalInterface(this ITypeDefinition typeDefinition)
+        public static IExternalInterface GetExternalInterface(this ITypeDefinition typeDefinition)
         {
             var attr = typeDefinition.GetAttributes().FirstOrDefault(a => a.Constructor != null && (a.Constructor.DeclaringType.FullName == CS.Attributes.EXTERNAL_INTERFACE));
 
@@ -1374,6 +1464,51 @@ namespace Bridge.Contract
             return null;
         }
 
+        public static Tuple<OutputBy, int?> GetOutputBy(this IAssembly provider)
+        {
+            var attr = provider.GetAttribute(CS.Attributes.OUTPUT_BY);
+            if (attr == null || attr.PositionalArguments.Count == 0)
+            {
+                return null;
+            }
+            var outputBy = (OutputBy)(int)attr.PositionalArguments[0].ConstantValue;
+            int? startIndexInName = null;
+            if (attr.PositionalArguments.Count > 1)
+            {
+                startIndexInName = (int) attr.PositionalArguments[1].ConstantValue;
+            }
+            return Tuple.Create(outputBy, startIndexInName);
+        }
+        public static string GetOutput(this IAssembly provider)
+        {
+            var attr = provider.GetAttribute(CS.Attributes.OUTPUT);
+            if (attr == null || attr.PositionalArguments.Count == 0)
+            {
+                return null;
+            }
+
+            if (attr.PositionalArguments[0].ConstantValue is string)
+            {
+                return (string)attr.PositionalArguments[0].ConstantValue;
+            }
+
+            return null;
+        }
+        public static string GetFileName(this IAssembly provider)
+        {
+            var attr = provider.GetAttribute(CS.Attributes.FILENAME);
+            if (attr == null || attr.PositionalArguments.Count == 0)
+            {
+                return null;
+            }
+
+            if (attr.PositionalArguments[0].ConstantValue is string)
+            {
+                return (string)attr.PositionalArguments[0].ConstantValue;
+            }
+
+            return null;
+        }
         public static string GetFileName(this IEntity provider)
         {
             var attr = provider.GetAttribute(CS.Attributes.FILENAME);

@@ -3,10 +3,6 @@ using Bridge.Contract.Constants;
 
 using ICSharpCode.NRefactory.CSharp;
 
-using System;
-using System.Linq;
-using ICSharpCode.NRefactory.Semantics;
-
 namespace Bridge.Translator
 {
     public class ThrowBlock : AbstractEmitterBlock

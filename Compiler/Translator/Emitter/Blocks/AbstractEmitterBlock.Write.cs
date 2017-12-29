@@ -143,7 +143,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    s = emitter.ToJavaScript(value);
+                    s = value.ToJavaScript();
                 }
             }
             else if (value is float)
@@ -163,12 +163,12 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    s = emitter.ToJavaScript(value);
+                    s = value.ToJavaScript();
                 }
             }
             else if (value is char)
             {
-                s = emitter.ToJavaScript((int)(char)value);
+                s = ((int)(char)value).ToJavaScript();
             }
             else if (value is decimal)
             {
@@ -184,7 +184,7 @@ namespace Bridge.Translator
             }
             else
             {
-                s = emitter.ToJavaScript(value);
+                s = value.ToJavaScript();
             }
             return s;
         }
@@ -335,15 +335,15 @@ namespace Bridge.Translator
 
             if (similar)
             {
-                s = emitter.ToJavaScript(value);
+                s = value.ToJavaScript();
                 if (CultureInfo.InstalledUICulture.CompareInfo.IndexOf(s, "e", CompareOptions.IgnoreCase) > -1)
                 {
-                    s = emitter.ToJavaScript(s);
+                    s = s.ToJavaScript();
                 }
             }
             else
             {
-                s = emitter.ToJavaScript(value.ToString(CultureInfo.InvariantCulture));
+                s = value.ToString(CultureInfo.InvariantCulture).ToJavaScript();
             }
 
             return s;
@@ -356,10 +356,10 @@ namespace Bridge.Translator
                 int l1 = (int)(value & uint.MaxValue);
                 int l2 = (int)(value >> 32);
 
-                return emitter.ToJavaScript(new int[] { l1, l2 });
+                return new int[] { l1, l2 }.ToJavaScript();
             }
 
-            return emitter.ToJavaScript(value);
+            return value.ToJavaScript();
         }
 
         public static string ULongConstant(ulong value, IEmitter emitter)
@@ -369,10 +369,10 @@ namespace Bridge.Translator
                 int l1 = (int)(value & uint.MaxValue);
                 int l2 = (int)(value >> 32);
 
-                return emitter.ToJavaScript(new int[] { l1, l2 });
+                return new int[] { l1, l2 }.ToJavaScript();
             }
 
-            return emitter.ToJavaScript(value);
+            return value.ToJavaScript();
         }
 
         public virtual void WriteCall(object callee = null)

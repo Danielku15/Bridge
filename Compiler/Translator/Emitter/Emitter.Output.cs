@@ -143,7 +143,7 @@ namespace Bridge.Translator
                                 : null;
             string author = versionContext.Assembly.CompanyName;
             string copyright = versionContext.Assembly.Copyright;
-            string compiler = "Bridge.NET " + versionContext.Compiler.Version;
+            string compiler = "Bridge.NET " + versionContext.Compiler.FileVersion;
 
             WriteNewLine(tmp, "/**");
 
@@ -310,7 +310,7 @@ namespace Bridge.Translator
 
                     amd.Each(md =>
                     {
-                        tmp.Append(this.ToJavaScript(md.DependencyName));
+                        tmp.Append(md.DependencyName.ToJavaScript());
                         tmp.Append(",");
                     });
                     tmp.Remove(tmp.Length - 1, 1); // remove trailing comma
@@ -352,7 +352,7 @@ namespace Bridge.Translator
                     es6.Each(md =>
                     {
                         this.WriteIndent(tmp, level);
-                        this.WriteNewLine(tmp, "import " + (md.VariableName.IsNotEmpty() ? md.VariableName : md.DependencyName) + " from " + this.ToJavaScript(md.DependencyName) + ";");
+                        this.WriteNewLine(tmp, "import " + (md.VariableName.IsNotEmpty() ? md.VariableName : md.DependencyName) + " from " + md.DependencyName.ToJavaScript() + ";");
                     });
 
                     this.WriteNewLine(tmp);
@@ -402,6 +402,47 @@ namespace Bridge.Translator
             }
 
             return "\"use strict\";";
+        }
+
+
+        public string AddModule(string name, ITypeInfo typeInfo, bool excludeNs, bool isNested, out bool isCustomName)
+        {
+            isCustomName = false;
+            var currentTypeInfo = this.TypeInfo;
+            Module module = typeInfo.Module;
+            string moduleName = null;
+
+            if (currentTypeInfo != null && module != null)
+            {
+                if (this.Tag != "TS" || currentTypeInfo.Module == null || !currentTypeInfo.Module.Equals(module))
+                {
+                    if (!module.PreventModuleName || typeInfo != null)
+                    {
+                        moduleName = module.ExportAsNamespace;
+                    }
+
+                    this.EnsureDependencies(typeInfo, currentTypeInfo, module);
+                }
+            }
+
+            return this.GetCustomName(name, typeInfo, excludeNs, isNested, ref isCustomName, moduleName);
+        }
+
+        internal void EnsureDependencies(ITypeInfo type, ITypeInfo currentTypeInfo, Module module)
+        {
+            if (!this.DisableDependencyTracking
+                && currentTypeInfo.Key != type.Key
+                && !Module.Equals(currentTypeInfo.Module, module)
+                && this.CurrentDependencies.All(d => d.DependencyName != module.Name))
+            {
+                this.CurrentDependencies.Add(new ModuleDependency
+                {
+                    DependencyName = module.Name,
+                    VariableName = module.ExportAsNamespace,
+                    Type = module.Type,
+                    PreventName = module.PreventModuleName
+                });
+            }
         }
     }
 }

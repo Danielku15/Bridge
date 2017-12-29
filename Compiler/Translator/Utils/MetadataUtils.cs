@@ -86,7 +86,7 @@ namespace Bridge.Translator
 
             if (typedef != null)
             {
-                var cecilType = type.Kind == TypeKind.Anonymous ? null : emitter.GetTypeDefinition(type);
+                var cecilType = type.Kind == TypeKind.Anonymous ? null : type.GetDefinition();
 
                 if (type.DeclaringType != null)
                 {
@@ -246,12 +246,12 @@ namespace Bridge.Translator
                 {
                     result.Add("dv",
                         typeParam.OwnerType == SymbolKind.Method
-                            ? new JRaw(emitter.ToJavaScript(p.ConstantValue))
+                            ? new JRaw(p.ConstantValue.ToJavaScript())
                             : new JRaw(string.Format("{0}({1})", JS.Funcs.BRIDGE_GETDEFAULTVALUE, typeParam.Name)));
                 }
                 else
                 {
-                    result.Add("dv", new JRaw(emitter.ToJavaScript(p.ConstantValue)));
+                    result.Add("dv", new JRaw(p.ConstantValue.ToJavaScript()));
                 }
 
                 result.Add("o", true);
@@ -742,7 +742,7 @@ namespace Bridge.Translator
                 return JS.Types.System.Object.NAME;
             }
 
-            var name = BridgeTypes.ToJsName(type, emitter, asDefinition, skipMethodTypeParam: true);
+            var name = emitter.ToJsName(type, asDefinition, skipMethodTypeParam: true);
 
             if (emitter.NamespacesCache != null && name.StartsWith(type.Namespace + "."))
             {

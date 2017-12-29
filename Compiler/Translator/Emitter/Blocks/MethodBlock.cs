@@ -49,7 +49,7 @@ namespace Bridge.Translator
             int pos = this.Emitter.Output.Length;
             var writerInfo = this.SaveWriter();
 
-            string globalTarget = BridgeTypes.GetGlobalTarget(this.TypeInfo.Type.GetDefinition(), this.TypeInfo.TypeDeclaration);
+            string globalTarget = this.TypeInfo.Type.GetGlobalTarget(this.TypeInfo.TypeDeclaration);
 
             if (globalTarget == null)
             {
@@ -101,7 +101,7 @@ namespace Bridge.Translator
                 }
             }
 
-            if (this.TypeInfo.ClassType == ClassType.Struct)
+            if (this.TypeInfo.Type.Kind == TypeKind.Struct)
             {
                 if (!this.StaticBlock)
                 {
@@ -109,7 +109,7 @@ namespace Bridge.Translator
                 }
                 else
                 {
-                    string structName = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter);
+                    string structName = this.Emitter.ToJsName(this.TypeInfo.Type);
                     if (this.TypeInfo.Type.TypeArguments.Count > 0 &&
                         !TypeInfo.Type.IsIgnoreGeneric())
                     {
@@ -166,7 +166,7 @@ namespace Bridge.Translator
 
         protected virtual void EmitMetadata()
         {
-            if (this.TypeInfo.Module == null || !this.Emitter.ReflectableTypes.Any(t => t == this.Emitter.TypeInfo.Type))
+            if (this.TypeInfo.Module == null || this.Emitter.ReflectableTypes.All(t => !Equals(t, this.Emitter.TypeInfo)))
             {
                 return;
             }
@@ -185,8 +185,8 @@ namespace Bridge.Translator
 
         protected virtual void EmitStructMethods()
         {
-            var typeDef = TypeInfo.Type.GetDefinition();
-            string structName = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter);
+            var typeDef = this.TypeInfo.Type;
+            string structName = this.Emitter.ToJsName(this.TypeInfo.Type);
 
             bool immutable = typeDef.IsImmutableType();
 
@@ -314,11 +314,11 @@ namespace Bridge.Translator
                     this.Write("this.");
                     this.Write(fieldName);
 
-                    var rr = this.Emitter.Resolver.ResolveNode(field.Entity, this.Emitter) as MemberResolveResult;
+                    var rr = this.Emitter.Resolver.ResolveNode(field.Entity) as MemberResolveResult;
 
                     if (rr == null && field.VarInitializer != null)
                     {
-                        rr = Emitter.Resolver.ResolveNode(field.VarInitializer, Emitter) as MemberResolveResult;
+                        rr = this.Emitter.Resolver.ResolveNode(field.VarInitializer) as MemberResolveResult;
                     }
 
                     if (rr != null)
@@ -378,12 +378,6 @@ namespace Bridge.Translator
             }
             else
             {
-                var typeDef = this.Emitter.GetTypeDefinition();
-                var name = group[0].Declaration.Name;
-                var methodsDef = typeDef.Methods.Where(m => m.Name == name);
-                this.Emitter.MethodsGroup = methodsDef;
-                this.Emitter.MethodsGroupBuilder = new Dictionary<int, StringBuilder>();
-
                 foreach (var method in group)
                 {
                     if (!method.Declaration.Body.IsNull && (!this.StaticBlock || !Helpers.IsEntryPointMethod(this.Emitter, group[0].Declaration)))
@@ -391,9 +385,6 @@ namespace Bridge.Translator
                         this.Emitter.VisitMethodDeclaration(method.Declaration);
                     }
                 }
-
-                this.Emitter.MethodsGroup = null;
-                this.Emitter.MethodsGroupBuilder = null;
             }
         }
 
@@ -408,11 +399,6 @@ namespace Bridge.Translator
             }
             else
             {
-                var name = group[0].Name;
-                var methodsDef = this.Emitter.GetTypeDefinition().Methods.Where(m => m.Name == name);
-                this.Emitter.MethodsGroup = methodsDef;
-                this.Emitter.MethodsGroupBuilder = new Dictionary<int, StringBuilder>();
-
                 foreach (var method in group)
                 {
                     if (!method.Body.IsNull)
@@ -420,9 +406,6 @@ namespace Bridge.Translator
                         this.Emitter.VisitOperatorDeclaration(method);
                     }
                 }
-
-                this.Emitter.MethodsGroup = null;
-                this.Emitter.MethodsGroupBuilder = null;
             }
         }
     }

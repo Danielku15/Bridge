@@ -5,7 +5,7 @@ namespace Bridge.Translator.Logging
 {
     public class ConsoleLoggerWriter : ILogger
     {
-        public bool AlwaysLogErrors { get { return true; } }
+        public bool AlwaysLogErrors => true;
 
         public bool BufferedMode { get; set; }
 
@@ -17,32 +17,32 @@ namespace Bridge.Translator.Logging
 
         public void Error(string message)
         {
-            OutputMessage(message, ConsoleColor.Red, LoggerLevel.Error);
+            this.OutputMessage(message, ConsoleColor.Red, LoggerLevel.Error);
         }
 
         public void Error(string message, string file, int lineNumber, int columnNumber, int endLineNumber, int endColumnNumber)
         {
-            Error(message);
+            this.Error(message);
         }
 
         public void Warn(string message)
         {
-            OutputMessage(message, ConsoleColor.DarkYellow, LoggerLevel.Warning);
+            this.OutputMessage(message, ConsoleColor.DarkYellow, LoggerLevel.Warning);
         }
 
         public void Info(string message)
         {
-            OutputMessage(message, ConsoleColor.Gray, LoggerLevel.Info);
+            this.OutputMessage(message, ConsoleColor.Gray, LoggerLevel.Info);
         }
 
         public void Trace(string message)
         {
-            OutputMessage(message, ConsoleColor.Green, LoggerLevel.Trace);
+            this.OutputMessage(message, ConsoleColor.Green, LoggerLevel.Trace);
         }
 
         private void OutputMessage(string message, ConsoleColor color, LoggerLevel level)
         {
-            if (!CheckLoggerLevel(level))
+            if (!this.CheckLoggerLevel(level))
             {
                 return;
             }

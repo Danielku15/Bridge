@@ -63,7 +63,7 @@ namespace Bridge.Translator.TypeScript
                 {
                     if (ev.Entity.HasModifier(Modifiers.Public) || this.TypeInfo.Type.Kind == TypeKind.Interface)
                     {
-                        var memberResult = this.Emitter.Resolver.ResolveNode(ev.VarInitializer, this.Emitter) as MemberResolveResult;
+                        var memberResult = this.Emitter.Resolver.ResolveNode(ev.VarInitializer) as MemberResolveResult;
 
                         if (memberResult != null)
                         {
@@ -125,7 +125,7 @@ namespace Bridge.Translator.TypeScript
 
             string typeName = this.TypeInfo.IsEnum
                 ? (Helpers.IsStringNameEnum(this.TypeInfo.Type) ? "string" : "number")
-                : BridgeTypes.ToTypeScriptName(field.Entity.ReturnType, this.Emitter);
+                : this.Emitter.ToTypeScriptName(field.Entity.ReturnType);
             this.Write(typeName);
             this.WriteSemiColon();
             this.WriteNewLine();
@@ -138,7 +138,7 @@ namespace Bridge.Translator.TypeScript
             this.WriteOpenParentheses();
             this.Write("value");
             this.WriteColon();
-            string typeName = BridgeTypes.ToTypeScriptName(ev.Entity.ReturnType, this.Emitter);
+            string typeName = this.Emitter.ToTypeScriptName(ev.Entity.ReturnType);
             this.Write(typeName);
             this.WriteCloseParentheses();
             this.WriteColon();
@@ -154,7 +154,7 @@ namespace Bridge.Translator.TypeScript
             this.Write(name);
             this.WriteColon();
 
-            string typeName = BridgeTypes.ToTypeScriptName(ev.Entity.ReturnType, this.Emitter);
+            string typeName = this.Emitter.ToTypeScriptName(ev.Entity.ReturnType);
             this.Write(typeName);
 
             this.WriteSemiColon();

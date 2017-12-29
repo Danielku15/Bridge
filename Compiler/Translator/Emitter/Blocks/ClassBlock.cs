@@ -8,7 +8,9 @@ using Object.Net.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 
 namespace Bridge.Translator
 {
@@ -47,7 +49,7 @@ namespace Bridge.Translator
         protected override void DoEmit()
         {
             XmlToJsDoc.EmitComment(this, this.Emitter.Translator.EmitNode);
-            string globalTarget = BridgeTypes.GetGlobalTarget(this.TypeInfo.Type.GetDefinition(), this.TypeInfo.TypeDeclaration);
+            string globalTarget = this.TypeInfo.Type.GetGlobalTarget(this.TypeInfo.TypeDeclaration);
 
             if (globalTarget != null)
             {
@@ -140,7 +142,7 @@ namespace Bridge.Translator
 
             if (name.IsEmpty())
             {
-                name = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter, asDefinition: true, nomodule: true, ignoreLiteralName: false);
+                name = this.Emitter.ToJsName(this.TypeInfo.Type, asDefinition: true, nomodule: true, ignoreLiteralName: false);
             }
 
             if (typeDef.Kind == TypeKind.Interface && IsGeneric)
@@ -181,12 +183,9 @@ namespace Bridge.Translator
 
             this.BeginBlock();
 
-            string extend = this.Emitter.GetTypeHierarchy();
-
+            var extend = GetTypeHierarchy();
             if (extend.IsNotEmpty() && !this.TypeInfo.IsEnum)
             {
-                var bridgeType = this.Emitter.BridgeTypes.Get(this.Emitter.TypeInfo);
-
                 if (this.TypeInfo.InstanceMethods.Any(m => m.Value.Any(subm => this.Emitter.GetEntityName(subm.Declaration) == JS.Fields.INHERITS)) ||
                     this.TypeInfo.InstanceConfig.Fields.Any(m => m.GetName(this.Emitter) == JS.Fields.INHERITS))
                 {
@@ -206,7 +205,7 @@ namespace Bridge.Translator
                 // Bridge.define("Test", {
                 //   inherits: function() { return [Test] },
                 // ...
-                if (Helpers.IsTypeArgInSubclass(bridgeType.Type.GetDefinition(), bridgeType.Type.GetDefinition(), this.Emitter, false))
+                if (Helpers.IsTypeArgInSubclass(this.TypeInfo.Type, this.TypeInfo.Type, this.Emitter, false))
                 {
                     this.WriteFunction();
                     this.WriteOpenCloseParentheses(true);
@@ -233,6 +232,48 @@ namespace Bridge.Translator
             }
 
             this.WriteVariance();
+        }
+
+        private string GetTypeHierarchy()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("[");
+
+            var list = new List<string>();
+
+            foreach (var t in this.TypeInfo.GetBaseTypes(this.Emitter))
+            {
+                var name = this.Emitter.ToJsName(t);
+
+                list.Add(name);
+            }
+
+            if (list.Count > 0 && list[0] == JS.Types.System.Object.NAME)
+            {
+                list.RemoveAt(0);
+            }
+
+            if (list.Count == 0)
+            {
+                return "";
+            }
+
+            bool needComma = false;
+
+            foreach (var item in list)
+            {
+                if (needComma)
+                {
+                    sb.Append(",");
+                }
+
+                needComma = true;
+                sb.Append(item);
+            }
+
+            sb.Append("]");
+
+            return sb.ToString();
         }
 
         private void WriteTopInitMethods()
@@ -396,7 +437,7 @@ namespace Bridge.Translator
                 {
                     this.EnsureComma();
                     this.Write(JS.Fields.UNDERLYINGTYPE + ": ");
-                    this.Write(BridgeTypes.ToJsName(etype, this.Emitter));
+                    this.Write(this.Emitter.ToJsName(etype));
 
                     this.Emitter.Comma = true;
                 }
@@ -411,7 +452,7 @@ namespace Bridge.Translator
 
             var ctorBlock = new ConstructorBlock(this.Emitter, this.TypeInfo, false);
 
-            if (this.TypeInfo.HasRealInstantiable(this.Emitter) || this.Emitter.Plugins.HasConstructorInjectors(ctorBlock) || this.TypeInfo.ClassType == ClassType.Struct)
+            if (this.TypeInfo.HasRealInstantiable(this.Emitter) || this.Emitter.Translator.Plugins.HasConstructorInjectors(ctorBlock) || this.TypeInfo.Type.Kind == TypeKind.Struct)
             {
                 ctorBlock.Emit();
                 new MethodBlock(this.Emitter, this.TypeInfo, false).Emit();
@@ -495,7 +536,7 @@ namespace Bridge.Translator
             {
                 this.Emitter.Comma = false;
 
-                var name = BridgeTypes.ToJsName(this.Emitter.TypeInfo.Type, this.Emitter, true);
+                var name = this.Emitter.ToJsName(this.Emitter.TypeInfo.Type, true);
 
                 this.WriteNewLine();
                 this.WriteNewLine();
@@ -671,7 +712,7 @@ namespace Bridge.Translator
                 {
                     this.Emitter.InitPosition = InitPosition.After;
 
-                    var callback = JS.Types.Bridge.INIT + "(function () { " + BridgeTypes.ToJsName(rrMethod.DeclaringTypeDefinition, this.Emitter) + "." +
+                    var callback = JS.Types.Bridge.INIT + "(function () { " + this.Emitter.ToJsName(rrMethod.DeclaringTypeDefinition) + "." +
                            this.Emitter.GetEntityName(method) + "(); });";
 
                     this.Emitter.InitPosition = null;

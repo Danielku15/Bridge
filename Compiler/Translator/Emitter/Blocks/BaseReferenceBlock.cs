@@ -34,7 +34,7 @@ namespace Bridge.Translator
             IMember member = null;
             if (this.BaseReferenceExpression.Parent != null)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(this.BaseReferenceExpression.Parent, this.Emitter) as MemberResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(this.BaseReferenceExpression.Parent) as MemberResolveResult;
                 if (rr != null)
                 {
                     member = rr.Member;
@@ -77,7 +77,7 @@ namespace Bridge.Translator
                     if (this.Emitter.GetInline(member) == null)
                     {
                         var name = OverloadsCollection.Create(this.Emitter, member).GetOverloadName(true);
-                        this.Write(JS.Types.Bridge.ENSURE_BASE_PROPERTY + "(this, " + this.Emitter.ToJavaScript(name) + ")");
+                        this.Write(JS.Types.Bridge.ENSURE_BASE_PROPERTY + "(this, " + name.ToJavaScript() + ")");
                     }
                     else
                     {
@@ -90,11 +90,11 @@ namespace Bridge.Translator
 
                     if (this.Emitter.TypeInfo.GetBaseTypes(this.Emitter).Any())
                     {
-                        this.Write(BridgeTypes.ToJsName(this.Emitter.TypeInfo.GetBaseClass(this.Emitter), this.Emitter), "." + JS.Fields.PROTOTYPE);
+                        this.Write(this.Emitter.ToJsName(this.Emitter.TypeInfo.GetBaseClass(this.Emitter)), "." + JS.Fields.PROTOTYPE);
                     }
                     else
                     {
-                        this.Write(BridgeTypes.ToJsName(baseType, this.Emitter), "." + JS.Fields.PROTOTYPE);
+                        this.Write(this.Emitter.ToJsName(baseType), "." + JS.Fields.PROTOTYPE);
                     }
                 }
             }

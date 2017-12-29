@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 using Bridge.Contract;
 using Bridge.Translator.Tests.Helpers;
-
-
+using ICSharpCode.NRefactory;
+using ICSharpCode.NRefactory.CSharp;
 using NUnit.Framework;
 using NSubstitute;
 
@@ -161,10 +161,14 @@ namespace Bridge.Translator.Tests
             {
                 ShouldFailTest(
                     parentType,
-                    (type) =>
+                    (ICSharpCode.NRefactory.TypeSystem.ITypeDefinition type) =>
                     {
                         var v = new Inspector(null);
-                        v.CheckObjectLiteral(type);
+                        var decl = new TypeDeclaration
+                        {
+                            NameToken = Identifier.Create(type.Name)
+                        };
+                        v.CheckObjectLiteral(type, decl);
                     },
                     (type) =>
                     {

@@ -7,28 +7,28 @@ namespace Bridge.Translator.Logging
 {
     public class Logger : ILogger
     {
-        public bool AlwaysLogErrors { get { return false; } }
+        public bool AlwaysLogErrors => false;
         public string Name { get; set; }
-        public List<ILogger> LoggerWriters { get; private set; }
+        public List<ILogger> LoggerWriters { get; }
         public bool UseTimeStamp { get; set; }
 
-        private bool bufferedMode;
+        private bool _bufferedMode;
 
         public bool BufferedMode
         {
-            get { return bufferedMode; }
+            get => this._bufferedMode;
             set
             {
-                LoggerWriters.ForEach(x => x.BufferedMode = value);
-                bufferedMode = value;
+                this.LoggerWriters.ForEach(x => x.BufferedMode = value);
+                this._bufferedMode = value;
             }
         }
 
-        private LoggerLevel loggerLevel;
+        private LoggerLevel _loggerLevel;
 
         public LoggerLevel LoggerLevel
         {
-            get { return loggerLevel; }
+            get => this._loggerLevel;
             set
             {
                 if (value < LoggerLevel.None)
@@ -36,9 +36,9 @@ namespace Bridge.Translator.Logging
                     value = LoggerLevel.None;
                 }
 
-                loggerLevel = value;
+                this._loggerLevel = value;
 
-                LoggerWriters.ForEach(x => x.LoggerLevel = value);
+                this.LoggerWriters.ForEach(x => x.LoggerLevel = value);
             }
         }
 
@@ -60,23 +60,22 @@ namespace Bridge.Translator.Logging
 
         public FileLoggerWriter GetFileLogger()
         {
-            return (FileLoggerWriter)LoggerWriters.Where(x => x is FileLoggerWriter).FirstOrDefault();
+            return this.LoggerWriters.OfType<FileLoggerWriter>().FirstOrDefault();
         }
 
         public void Flush()
         {
-            LoggerWriters.ForEach(x => x.Flush());
+            this.LoggerWriters.ForEach(x => x.Flush());
         }
 
         public void Error(string message)
         {
-            string wrappedMessage;
-
             foreach (var logger in this.LoggerWriters)
             {
                 var alwaysLogErrors = logger.AlwaysLogErrors;
 
-                if ((wrappedMessage = CheckIfCanLog(message, LoggerLevel.Error, alwaysLogErrors)) != null)
+                string wrappedMessage;
+                if ((wrappedMessage = this.CheckIfCanLog(message, LoggerLevel.Error, alwaysLogErrors)) != null)
                 {
                     logger.Error(wrappedMessage);
                 }
@@ -86,13 +85,12 @@ namespace Bridge.Translator.Logging
 
         public void Error(string message, string file, int lineNumber, int columnNumber, int endLineNumber, int endColumnNumber)
         {
-            string wrappedMessage;
-
             foreach (var logger in this.LoggerWriters)
             {
                 var alwaysLogErrors = logger.AlwaysLogErrors;
 
-                if ((wrappedMessage = CheckIfCanLog(message, LoggerLevel.Error, alwaysLogErrors)) != null)
+                string wrappedMessage;
+                if ((wrappedMessage = this.CheckIfCanLog(message, LoggerLevel.Error, alwaysLogErrors)) != null)
                 {
                     logger.Error(wrappedMessage, file, lineNumber, columnNumber, endLineNumber, endColumnNumber);
                 }
@@ -103,7 +101,7 @@ namespace Bridge.Translator.Logging
         {
             string wrappedMessage;
 
-            if ((wrappedMessage = CheckIfCanLog(message, LoggerLevel.Warning)) != null)
+            if ((wrappedMessage = this.CheckIfCanLog(message, LoggerLevel.Warning)) != null)
             {
                 foreach (var logger in this.LoggerWriters)
                 {
@@ -116,7 +114,7 @@ namespace Bridge.Translator.Logging
         {
             string wrappedMessage;
 
-            if ((wrappedMessage = CheckIfCanLog(message, LoggerLevel.Info)) != null)
+            if ((wrappedMessage = this.CheckIfCanLog(message, LoggerLevel.Info)) != null)
             {
                 foreach (var logger in this.LoggerWriters)
                 {
@@ -129,7 +127,7 @@ namespace Bridge.Translator.Logging
         {
             string wrappedMessage;
 
-            if ((wrappedMessage = CheckIfCanLog(message, LoggerLevel.Trace)) != null)
+            if ((wrappedMessage = this.CheckIfCanLog(message, LoggerLevel.Trace)) != null)
             {
                 foreach (var logger in this.LoggerWriters)
                 {
@@ -163,12 +161,7 @@ namespace Bridge.Translator.Logging
 
             var d = DateTime.Now.ToString("s") + ":" + DateTime.Now.Millisecond.ToString("D3") + " ";
 
-            string wrappedMessage = string.Format(
-                "{0}\t{1}\t{2}\t{3}",
-                d,
-                logLevel,
-                this.Name,
-                message);
+            string wrappedMessage = $"{d}\t{logLevel}\t{this.Name}\t{message}";
 
             return wrappedMessage;
         }

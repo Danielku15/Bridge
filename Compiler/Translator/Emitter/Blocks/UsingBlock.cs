@@ -75,7 +75,7 @@ namespace Bridge.Translator
             }
             else if (expression is IdentifierExpression)
             {
-                var resolveResult = this.Emitter.Resolver.ResolveNode(expression, this.Emitter);
+                var resolveResult = this.Emitter.Resolver.ResolveNode(expression);
                 var id = ((IdentifierExpression)expression).Identifier;
 
                 if (this.Emitter.Locals != null && this.Emitter.Locals.ContainsKey(id) && resolveResult is LocalResolveResult)

@@ -56,7 +56,7 @@ namespace Bridge.Translator
                 }
 
                 bool isReferenceLocal = false;
-                var lrr = this.Emitter.Resolver.ResolveNode(variable, this.Emitter) as LocalResolveResult;
+                var lrr = this.Emitter.Resolver.ResolveNode(variable) as LocalResolveResult;
 
                 if (this.Emitter.LocalsMap != null && lrr != null && this.Emitter.LocalsMap.ContainsKey(lrr.Variable))
                 {
@@ -68,7 +68,7 @@ namespace Bridge.Translator
 
                 if (variable.Initializer.IsNull && !this.VariableDeclarationStatement.Type.IsVar())
                 {
-                    var typeDef = this.Emitter.GetTypeDefinition(this.VariableDeclarationStatement.Type, true);
+                    var typeDef = this.Emitter.GetTypeDefinition(this.VariableDeclarationStatement.Type);
 
                     if (typeDef != null && typeDef.IsValueType() && !typeDef.IsExternal())
                     {
@@ -116,9 +116,9 @@ namespace Bridge.Translator
                     }
                     else
                     {
-                        var typerr = this.Emitter.Resolver.ResolveNode(this.VariableDeclarationStatement.Type, this.Emitter).Type;
+                        var typerr = this.Emitter.Resolver.ResolveNode(this.VariableDeclarationStatement.Type).Type;
                         var isGeneric = typerr.TypeArguments.Count > 0 && !typerr.IsIgnoreGeneric();
-                        this.Write(string.Concat("new ", isGeneric ? "(" : "", BridgeTypes.ToJsName(this.VariableDeclarationStatement.Type, this.Emitter), isGeneric ? ")" : "", "()"));
+                        this.Write(string.Concat("new ", isGeneric ? "(" : "", this.Emitter.ToJsName(typerr), isGeneric ? ")" : "", "()"));
                     }
                     this.Emitter.ReplaceAwaiterByVar = oldValue;
 

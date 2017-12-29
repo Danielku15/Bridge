@@ -12,9 +12,9 @@ namespace Bridge.Translator
 {
     public class TranslatorProcessor
     {
-        public BridgeOptions BridgeOptions { get; private set; }
+        public BridgeOptions BridgeOptions { get; }
 
-        public Logger Logger { get; private set; }
+        public Logger Logger { get; }
 
         public IAssemblyInfo TranslatorConfiguration { get; private set; }
 
@@ -67,7 +67,7 @@ namespace Bridge.Translator
 
             logger.Info("Post processing...");
 
-            var outputPath = GetOutputFolder();
+            var outputPath = this.GetOutputFolder();
 
             logger.Info("outputPath is " + outputPath);
 
@@ -87,7 +87,7 @@ namespace Bridge.Translator
                 logger.Info("No extracting core scripts option enabled");
             }
 
-            var fileName = GetDefaultFileName(bridgeOptions);
+            var fileName = this.GetDefaultFileName(bridgeOptions);
 
             translator.Minify();
             translator.Combine(fileName);
@@ -112,17 +112,14 @@ namespace Bridge.Translator
 
         private void GenerateHtml(string outputPath)
         {
-            var htmlTitle = Translator.AssemblyInfo.Html.Title;
+            var htmlTitle = this.Translator.AssemblyInfo.Html.Title;
 
             if (string.IsNullOrEmpty(htmlTitle))
             {
-                htmlTitle = Translator.GetVersionContext().Assembly.Title;
+                htmlTitle = this.Translator.GetVersionContext().Assembly.Title;
             }
 
-            var htmlGenerator = new HtmlGenerator(
-                Translator.Log,
-                Translator.AssemblyInfo,
-                Translator.Outputs,
+            var htmlGenerator = new HtmlGenerator(this.Translator.Log, this.Translator.AssemblyInfo, this.Translator.Outputs,
                 htmlTitle
                 );
 
@@ -255,7 +252,7 @@ namespace Bridge.Translator
 
             if (fileLoggerWriter != null)
             {
-                string logFileFolder = GetLoggerFolder(assemblyConfig);
+                string logFileFolder = this.GetLoggerFolder(assemblyConfig);
 
                 fileLoggerWriter.SetParameters(logFileFolder, assemblyConfig.Logging.FileName, assemblyConfig.Logging.MaxSize);
             }
@@ -289,12 +286,12 @@ namespace Bridge.Translator
 
             logger.Trace("Setting translator properties...");
 
-            Bridge.Translator.Translator translator = null;
+            Translator translator = null;
 
             // FIXME: detect by extension whether first argument is a project or DLL
             if (!bridgeOptions.IsFolderMode)
             {
-                translator = new Bridge.Translator.Translator(bridgeOptions.ProjectLocation, bridgeOptions.Sources, bridgeOptions.FromTask);
+                translator = new Translator(this.Logger, bridgeOptions.ProjectLocation, bridgeOptions.Sources, bridgeOptions.FromTask);
             }
             else
             {
@@ -304,7 +301,7 @@ namespace Bridge.Translator
                 }
 
                 bridgeOptions.Lib = Path.Combine(bridgeOptions.Folder, bridgeOptions.Lib);
-                translator = new Bridge.Translator.Translator(bridgeOptions.Folder, bridgeOptions.Sources, bridgeOptions.Recursive, bridgeOptions.Lib);
+                translator = new Translator(this.Logger, bridgeOptions.Folder, bridgeOptions.Sources, bridgeOptions.Recursive, bridgeOptions.Lib);
             }
 
             translator.ProjectProperties = bridgeOptions.ProjectProperties;
@@ -326,7 +323,6 @@ namespace Bridge.Translator
 
             translator.BridgeLocation = bridgeOptions.BridgeLocation;
             translator.Rebuild = bridgeOptions.Rebuild;
-            translator.Log = logger;
 
             if (bridgeOptions.ProjectProperties.DefineConstants != null)
             {
@@ -346,14 +342,9 @@ namespace Bridge.Translator
             {
                 translator.ReadFolderFiles();
 
-                if (!string.IsNullOrEmpty(assemblyConfig.FileName))
-                {
-                    translator.DefaultNamespace = Path.GetFileNameWithoutExtension(assemblyConfig.FileName);
-                }
-                else
-                {
-                    translator.DefaultNamespace = bridgeOptions.DefaultFileName;
-                }
+                translator.DefaultNamespace = !string.IsNullOrEmpty(assemblyConfig.FileName)
+                    ? Path.GetFileNameWithoutExtension(assemblyConfig.FileName)
+                    : bridgeOptions.DefaultFileName;
             }
             else
             {

@@ -224,7 +224,7 @@ namespace Bridge.Translator
                 node = this.LambdaExpression;
             }
 
-            var resolveResult = this.Emitter.Resolver.ResolveNode(node, this.Emitter);
+            var resolveResult = this.Emitter.Resolver.ResolveNode(node);
 
             if (resolveResult is LambdaResolveResult)
             {
@@ -258,7 +258,7 @@ namespace Bridge.Translator
 
         protected bool IsTaskResult(Expression expression)
         {
-            var resolveResult = this.Emitter.Resolver.ResolveNode(expression, this.Emitter);
+            var resolveResult = this.Emitter.Resolver.ResolveNode(expression);
 
             IType type;
 
@@ -283,7 +283,7 @@ namespace Bridge.Translator
             var unaryExpr = expression.Parent as UnaryOperatorExpression;
             if (unaryExpr != null && unaryExpr.Operator == UnaryOperatorType.Await)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(unaryExpr, this.Emitter) as AwaitResolveResult;
+                var rr = this.Emitter.Resolver.ResolveNode(unaryExpr) as AwaitResolveResult;
 
                 if (rr != null)
                 {
@@ -476,7 +476,7 @@ namespace Bridge.Translator
                 list.Add(i);
             }
 
-            this.Emitter.Output.Insert(pos, JS.Vars.ASYNC_STEP + " = " + JS.Types.System.Array.MIN + "(" + this.Emitter.ToJavaScript(list.ToArray()) + ", " + JS.Vars.ASYNC_STEP + ");");
+            this.Emitter.Output.Insert(pos, JS.Vars.ASYNC_STEP + " = " + JS.Types.System.Array.MIN + "(" + list.ToArray().ToJavaScript() + ", " + JS.Vars.ASYNC_STEP + ");");
         }
 
         protected void InjectCatchHandlers()

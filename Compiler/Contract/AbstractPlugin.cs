@@ -28,27 +28,27 @@ namespace Bridge.Contract
         {
         }
 
-        public virtual void BeforeEmit(IEmitter emitter, ITranslator translator)
+        public virtual void BeforeEmit(ITranslator translator)
         {
         }
 
-        public virtual void AfterEmit(IEmitter emitter, ITranslator translator)
+        public virtual void AfterEmit(ITranslator translator)
         {
         }
 
-        public virtual void BeforeTypesEmit(IEmitter emitter, IList<ITypeInfo> types)
+        public virtual void BeforeTypesEmit(ITranslator translator, IEnumerable<ITypeInfo> types)
         {
         }
 
-        public virtual void AfterTypesEmit(IEmitter emitter, IList<ITypeInfo> types)
+        public virtual void AfterTypesEmit(ITranslator translator, IEnumerable<ITypeInfo> types)
         {
         }
 
-        public virtual void BeforeTypeEmit(IEmitter emitter, ITypeInfo type)
+        public virtual void BeforeTypeEmit(ITranslator translator, ITypeInfo type)
         {
         }
 
-        public virtual void AfterTypeEmit(IEmitter emitter, ITypeInfo type)
+        public virtual void AfterTypeEmit(ITranslator translator, ITypeInfo type)
         {
         }
 

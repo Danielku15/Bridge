@@ -274,13 +274,11 @@
     <Compile Include="Emitter\Blocks\ExpressionListBlock.cs" />
     <Compile Include="Emitter\Blocks\InlineArgumentsBlock.cs" />
     <Compile Include="Emitter\Blocks\AbstractEmitterBlock.cs" />
-    <Compile Include="Emitter\TempEmitter.cs" />
     <Compile Include="Emitter\Emitter.OutputModule.cs" />
     <Compile Include="Emitter\Emitter.TypeHelpers.cs" />
     <Compile Include="Emitter\Emitter.Helpers.cs" />
     <Compile Include="Emitter\Emitter.Output.cs" />
     <Compile Include="Emitter\Blocks\AbstractEmitterBlock.Write.cs" />
-    <Compile Include="Emitter\Emitter.Log.cs" />
     <Compile Include="Emitter\EmitterOutput.cs" />
     <Compile Include="Emitter\ExpressionTreeBuilder.cs" />
     <Compile Include="Emitter\ResolveResultVisitor.cs" />
@@ -306,6 +304,8 @@
     <Compile Include="SourceMaps\SourceMapBuilder.cs" />
     <Compile Include="SourceMaps\SourceMapEntry.cs" />
     <Compile Include="SourceMaps\SourceMapGenerator.cs" />
+    <Compile Include="Translator\BridgeTypes.cs" />
+    <Compile Include="Translator\Translator.Log.cs" />
     <Compile Include="Translator\InvocationInterceptor.cs" />
     <Compile Include="Translator\HtmlGenerator.cs" />
     <Compile Include="Translator\Translator.Output.cs" />
@@ -320,9 +320,6 @@
     <Compile Include="Translator\Translator.Resources.cs" />
     <Compile Include="Translator\Translator.Config.cs" />
     <Compile Include="Translator\TranslatorProcessor.cs" />
-    <Compile Include="Utils\AssigmentExpressionHelper.cs" />
-    <Compile Include="Utils\CombinedAstAndResolveResultVisitor.cs" />
-    <Compile Include="Utils\DependencyFinderVisitor.cs" />
     <Compile Include="Utils\AssemblyConfigHelper.cs" />
     <Compile Include="Utils\BridgeOptions.cs" />
     <Compile Include="Utils\AnonymousTypeConfig.cs" />
@@ -340,6 +337,7 @@
     <Compile Include="Utils\Roslyn\SyntaxHelper.cs" />
     <Compile Include="Utils\RawValue.cs" />
     <Compile Include="Utils\GotoSearchVisitor.cs" />
+    <Compile Include="Utils\XmlToJsDoc.cs" />
     <Compile Include="Utils\YieldSearchVisitor.cs" />
     <Compile Include="Utils\ParsedSourceFile.cs" />
     <Compile Include="Utils\ReferenceArgumentVisitor.cs" />
@@ -351,7 +349,6 @@
     <Compile Include="Utils\Exception.cs" />
     <Compile Include="Emitter\Emitter.cs" />
     <Compile Include="Inspector\Inspector.Visitor.cs" />
-    <Compile Include="Inspector\Inspector.Properties.cs" />
     <Compile Include="Inspector\Inspector.cs" />
     <Compile Include="Inspector\Visitor.Empty.cs" />
     <Compile Include="Utils\ArrayInitializerVisitor.cs" />

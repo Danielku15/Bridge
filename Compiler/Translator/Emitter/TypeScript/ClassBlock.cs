@@ -1,6 +1,5 @@
 using Bridge.Contract;
 using Bridge.Contract.Constants;
-using Mono.Cecil;
 using Object.Net.Utilities;
 using System.Collections.Generic;
 using System.Linq;
@@ -87,11 +86,11 @@ namespace Bridge.Translator.TypeScript
 
             if (name.IsEmpty())
             {
-                name = BridgeTypes.ToTypeScriptName(this.TypeInfo.Type, this.Emitter, false, true);
+                name = this.Emitter.ToTypeScriptName(this.TypeInfo.Type, false, true);
 
                 if (this.IsGeneric)
                 {
-                    this.DefName = BridgeTypes.ToTypeScriptName(this.TypeInfo.Type, this.Emitter, true, true);
+                    this.DefName = this.Emitter.ToTypeScriptName(this.TypeInfo.Type, true, true);
                 }
             }
 
@@ -128,7 +127,7 @@ namespace Bridge.Translator.TypeScript
 
             foreach (var t in this.TypeInfo.GetBaseTypes(this.Emitter))
             {
-                var name = BridgeTypes.ToTypeScriptName(t, this.Emitter);
+                var name = this.Emitter.ToTypeScriptName(t);
 
                 list.Add(name);
             }
@@ -249,8 +248,7 @@ namespace Bridge.Translator.TypeScript
             {
                 foreach (var nestedType in this.NestedTypes)
                 {
-
-                    var typeDef = this.Emitter.GetTypeDefinition(nestedType.Type);
+                    var typeDef = nestedType.Type;
 
                     if (typeDef.Kind == TypeKind.Interface || typeDef.IsObjectLiteral())
                     {
@@ -262,8 +260,8 @@ namespace Bridge.Translator.TypeScript
 
                     if (defName.IsEmpty())
                     {
-                        defName = BridgeTypes.ToTypeScriptName(nestedType.Type, this.Emitter, true);
-                        this.Write(BridgeTypes.ToTypeScriptName(nestedType.Type, this.Emitter, true, true));
+                        defName = this.Emitter.ToTypeScriptName(nestedType.Type, true);
+                        this.Write(this.Emitter.ToTypeScriptName(nestedType.Type, true, true));
                     }
                     else
                     {
@@ -278,7 +276,7 @@ namespace Bridge.Translator.TypeScript
                         {
                             parentName = this.TypeInfo.Type.Name;
                         }
-                        defName = parentName + "." + BridgeTypes.ToTypeScriptName(nestedType.Type, this.Emitter, false, true);
+                        defName = parentName + "." + this.Emitter.ToTypeScriptName(nestedType.Type, false, true);
                     }
 
                     this.WriteColon();
@@ -308,7 +306,7 @@ namespace Bridge.Translator.TypeScript
             
             if (this.TypeInfo.ParentType == null && !isInterface)
             {
-                string name = BridgeTypes.ToTypeScriptName(this.TypeInfo.Type, this.Emitter, true, true);
+                string name = this.Emitter.ToTypeScriptName(this.TypeInfo.Type, true, true);
                 this.WriteNewLine();
 
                 if (this.Namespace == null)
@@ -341,7 +339,7 @@ namespace Bridge.Translator.TypeScript
                 string name = this.Emitter.GetCustomTypeName(typeDef, false);
                 if (name.IsEmpty())
                 {
-                    name = BridgeTypes.ToJsName(this.TypeInfo.Type, this.Emitter, true, true, nomodule: true);
+                    name = this.Emitter.ToJsName(this.TypeInfo.Type, true, true, nomodule: true);
                 }
 
                 this.Write("module ");
@@ -357,22 +355,6 @@ namespace Bridge.Translator.TypeScript
                     if (nestedType.IsObjectLiteral)
                     {
                         continue;
-                    }
-
-                    ITypeInfo typeInfo;
-
-                    if (this.Emitter.TypeInfoDefinitions.ContainsKey(nestedType.Key))
-                    {
-                        typeInfo = this.Emitter.TypeInfoDefinitions[nestedType.Key];
-
-                        nestedType.Module = typeInfo.Module;
-                        nestedType.FileName = typeInfo.FileName;
-                        nestedType.Dependencies = typeInfo.Dependencies;
-                        typeInfo = nestedType;
-                    }
-                    else
-                    {
-                        typeInfo = nestedType;
                     }
 
                     this.Emitter.TypeInfo = nestedType;

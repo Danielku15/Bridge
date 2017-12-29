@@ -53,7 +53,7 @@ namespace Bridge.Translator
 
             declarations.ToList().ForEach(item =>
             {
-                var rr = item.Parent != null ? (LocalResolveResult)this.Emitter.Resolver.ResolveNode(item, this.Emitter) : null;
+                var rr = item.Parent != null ? (LocalResolveResult)this.Emitter.Resolver.ResolveNode(item) : null;
                 var name = this.Emitter.GetParameterName(item);
                 var vName = this.AddLocal(item.Name, item, item.Type, name);
 
@@ -74,7 +74,7 @@ namespace Bridge.Translator
 
             foreach (var expr in visitor.DirectionExpression)
             {
-                var rr = this.Emitter.Resolver.ResolveNode(expr, this.Emitter);
+                var rr = this.Emitter.Resolver.ResolveNode(expr);
 
                 IdentifierExpression identifierExpression;
                 var lrr = rr as LocalResolveResult;
@@ -135,7 +135,7 @@ namespace Bridge.Translator
             }
 
             var result = this.Emitter.LocalsNamesMap[name];
-            var lrr = node != null && node.Parent != null ? this.Emitter.Resolver.ResolveNode(node, this.Emitter) as LocalResolveResult : null;
+            var lrr = node != null && node.Parent != null ? this.Emitter.Resolver.ResolveNode(node) as LocalResolveResult : null;
 
             if (this.Emitter.LocalsMap != null && lrr != null && this.Emitter.LocalsMap.ContainsKey(lrr.Variable))
             {
@@ -244,7 +244,7 @@ namespace Bridge.Translator
                 var p = declarations.First().Parent;
                 if (p != null)
                 {
-                    var rr = this.Emitter.Resolver.ResolveNode(p, this.Emitter) as MemberResolveResult;
+                    var rr = this.Emitter.Resolver.ResolveNode(p) as MemberResolveResult;
 
                     if (rr != null)
                     {
@@ -270,7 +270,7 @@ namespace Bridge.Translator
                                     }
                                     else if (prm.ConstantValue == null && prm.Type.Kind == TypeKind.TypeParameter)
                                     {
-                                        this.Write(JS.Funcs.BRIDGE_GETDEFAULTVALUE + "(" + BridgeTypes.ToJsName(prm.Type, this.Emitter) + ")");
+                                        this.Write(JS.Funcs.BRIDGE_GETDEFAULTVALUE + "(" + this.Emitter.ToJsName(prm.Type) + ")");
                                     }
                                     else
                                     {
@@ -307,7 +307,7 @@ namespace Bridge.Translator
 
             declarations.ToList().ForEach(item =>
             {
-                var lrr = item.Parent != null ? (LocalResolveResult)this.Emitter.Resolver.ResolveNode(item, this.Emitter) : null;
+                var lrr = item.Parent != null ? (LocalResolveResult)this.Emitter.Resolver.ResolveNode(item) : null;
                 var isReferenceLocal = lrr != null && this.Emitter.LocalsMap.ContainsKey(lrr.Variable) && this.Emitter.LocalsMap[lrr.Variable].EndsWith(".v");
 
                 if (item.Parent == null && item.Name == "value")

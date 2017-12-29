@@ -1,7 +1,6 @@
 using Bridge.Contract;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace Bridge.Translator.Utils
@@ -10,8 +9,8 @@ namespace Bridge.Translator.Utils
     {
         private const string CONFIG_FILE_NAME = "bridge.json";
 
-        private ILogger Logger { get; set; }
-        private ConfigHelper<AssemblyInfo> helper { get; set; }
+        private ILogger Logger { get; }
+        private ConfigHelper<AssemblyInfo> helper { get; }
 
         public AssemblyConfigHelper(ILogger logger)
         {
