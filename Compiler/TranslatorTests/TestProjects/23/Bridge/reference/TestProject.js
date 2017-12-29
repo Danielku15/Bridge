@@ -26,15 +26,15 @@ Bridge.assembly("TestProject", function ($asm, globals) {
 
     Bridge.define("TestProject.Setup", {
         main: function Main () {
-            var test = new NewName();
+            var test = (function() { return { Field: 0, _Events: [] }})();
             test.Field++;
             console.log(test.Field);
-            (test.Field += (1 * 2) | 0);
+            (test.Field += (1 * 2 * TestProject.Other.Create(3).Test) | 0);
             test.Property = (test.Property + 2) | 0;
             console.log(test.Property);
             var x = $asm.$.TestProject.Setup.f1;
-            test.addEvent(x);
-            test.removeEvent(x);
+            test._Events.push(x);
+            { var __idx = test._Events.indexOf(x); test._Events.splice(__idx, 1); };
             console.log(test._Field);
         }
     });
@@ -48,12 +48,16 @@ Bridge.assembly("TestProject", function ($asm, globals) {
     });
 
     Bridge.define("NewName", {
-        fields: {
-            _Field: 0
+        statics: {
+            methods: {
+                getDefaultValue: function () {
+                    return (function() { return { Field: 0, _Events: [] }})();
+                }
+            }
         },
-        props: {
+        fields: {
             Property: 0,
-            Property2: 0
+            _Field: 0
         },
         methods: {
             addEvent: function (value) {
@@ -61,13 +65,7 @@ Bridge.assembly("TestProject", function ($asm, globals) {
             },
             removeEvent: function (value) {
                 throw new System.NotImplementedException();
-            },
-            MethodWithReturn: function () {
-                return 0;
-            },
-            Method: function () { },
-            MethodWithArgs: function (a, b) { },
-            MethodWithArgs: function (a, b, c) { }
+            }
         }
     });
 

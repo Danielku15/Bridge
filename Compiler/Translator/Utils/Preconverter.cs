@@ -120,12 +120,17 @@ namespace Bridge.Translator
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
+
+                if (rr.Member.IsCompilerExtension())
+                {
+                    this.Found = true;
+                }
             }
             else
             {
                 this.Rules = Contract.Rules.Default;
             }
-
+            
             base.VisitMethodDeclaration(methodDeclaration);
         }
 
@@ -283,6 +288,10 @@ namespace Bridge.Translator
             if (rr != null)
             {
                 this.Rules = Contract.Rules.Get(this.Emitter, rr.Member);
+                if (rr.Member.IsCompilerExtension())
+                {
+                    this.ExecuteCompilerExtension(methodDeclaration, (IMethod)rr.Member);
+                }
             }
             else
             {
@@ -290,6 +299,27 @@ namespace Bridge.Translator
             }
 
             return base.VisitMethodDeclaration(methodDeclaration);
+        }
+
+        private void ExecuteCompilerExtension(MethodDeclaration methodDeclaration, IMethod method)
+        {
+            // validate signature 
+            if (method.Parameters.Count != 1 ||
+                method.Parameters[0].Type.FullName != "Bridge.CompilerServices.ICompilerContext")
+            {
+                throw new EmitterException(methodDeclaration, "[CompilerExtension] methods must accept exactly one parameter of type Bridge.CompilerServices.ICompilerContext");
+            }
+            if (!method.IsStatic)
+            {
+                throw new EmitterException(methodDeclaration, "[CompilerExtension] methods must be static");
+            }
+            if (methodDeclaration.Body == null)
+            {
+                throw new EmitterException(methodDeclaration, "[CompilerExtension] methods must have a body");
+            }
+
+            var interpreter = new CompilerExtensionInterpreter(this.Resolver, methodDeclaration.Body);
+            interpreter.Execute();
         }
 
         public override AstNode VisitPropertyDeclaration(PropertyDeclaration propertyDeclaration)

@@ -7,6 +7,6 @@ namespace Bridge.CompilerServices
     [NonScriptable]
     public interface IAttributesBuilder
     {
-        IAttributesBuilder Add(Attribute attribute);
+        void Add(params Attribute[] attributes);
     }
 }

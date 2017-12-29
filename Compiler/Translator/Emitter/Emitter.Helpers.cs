@@ -75,7 +75,7 @@ namespace Bridge.Translator
             var inlineCode = isInlineMethod ? null : GetInline(member);
             var isStatic = member.IsStatic;
 
-            if (!string.IsNullOrEmpty(inlineCode) && member is IProperty)
+            if (!string.IsNullOrEmpty(inlineCode) && (member is IProperty || member is IEvent))
             {
                 inlineCode = inlineCode.Replace("{value}", "{0}");
             }

@@ -766,18 +766,16 @@ namespace Bridge.Translator
         private void AcceptLeftExpression(Expression left, ResolveResult rr)
         {
             var mrr = rr as MemberResolveResult;
-            if (!this.Emitter.InConstructor || mrr == null || !(mrr.Member is IProperty) || mrr.Member.IsStatic || mrr.Member.DeclaringTypeDefinition == null || !mrr.Member.DeclaringTypeDefinition.Equals(this.Emitter.TypeInfo.Type))
+            if (!this.Emitter.InConstructor || mrr == null || !(mrr.Member is IProperty || mrr.Member is IEvent) || mrr.Member.IsStatic || mrr.Member.DeclaringTypeDefinition == null || !mrr.Member.DeclaringTypeDefinition.Equals(this.Emitter.TypeInfo.Type))
             {
                 left.AcceptVisitor(this.Emitter);
             }
             else
             {
-                var property = (IProperty)mrr.Member;
-                var proto = mrr.IsVirtualCall || property.IsVirtual || property.IsOverride;
+                var proto = mrr.IsVirtualCall || mrr.Member.IsVirtual || mrr.Member.IsOverride;
 
                 var td = this.Emitter.GetTypeDefinition();
                 var prop = td.Properties.FirstOrDefault(p => p.Name == mrr.Member.Name);
-
                 if (proto && prop != null && prop.Setter == null)
                 {
                     var name = OverloadsCollection.Create(this.Emitter, mrr.Member).GetOverloadName();

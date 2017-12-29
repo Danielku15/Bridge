@@ -333,7 +333,6 @@ namespace Bridge.Translator
 
             if (rr.Member.IsCompilerExtension())
             {
-                this.ExecuteCompilerExtension(methodDeclaration, (IMethod)rr.Member);
                 return;
             }
 

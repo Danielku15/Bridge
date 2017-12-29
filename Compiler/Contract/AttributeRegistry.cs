@@ -76,7 +76,7 @@ namespace Bridge.Contract
 
         public static bool IsNonScriptable(this IEntity entity)
         {
-            return entity.HasAttribute(CS.Attributes.NON_SCRIPTABLE);
+            return entity.HasAttribute(CS.Attributes.NON_SCRIPTABLE) || entity.IsCompilerExtension();
         }
 
         public static Module GetModule(this ITypeDefinition typeDefinition)
@@ -1781,7 +1781,7 @@ namespace Bridge.Contract
 
         private static string GetAttributeKey(IEntity entity)
         {
-            return entity == null ? string.Empty : entity.ReflectionName;
+            return entity?.ToString() ?? string.Empty;
         }
 
         private static string GetAttributeKey(IAssembly entity)

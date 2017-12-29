@@ -295,7 +295,6 @@
     <Compile Include="Emitter\TypeScript\CustomEventBlock.cs" />
     <Compile Include="Emitter\TypeScript\IndexerBlock.cs" />
     <Compile Include="Inspector\CompilerExtensionInterpreter.cs" />
-    <Compile Include="Inspector\Inspector.CompilerExtension.cs" />
     <Compile Include="Logging\ConsoleLoggerWriter.cs" />
     <Compile Include="Logging\Logger.cs" />
     <Compile Include="Logging\FileLoggerWriter.cs" />

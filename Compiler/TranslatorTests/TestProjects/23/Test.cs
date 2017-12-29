@@ -83,9 +83,9 @@ namespace TestProject
         {
             var attributes = ctx.Attributes;
 
-            //attributes.Assembly()
-            //    .Add(new AssemblyCompanyAttribute("Test"))
-            //    .Add(new AssemblyCopyrightAttribute("Test2"));
+            attributes.Assembly()
+                .Add(new AssemblyCompanyAttribute("Test")
+					, new AssemblyCopyrightAttribute("Test2"));
 
             // add attributes to types
             attributes.Type<Test>()
@@ -122,7 +122,7 @@ namespace TestProject
 
             // for constructors create an object
             attributes.Constructor(() => new Test())
-                .Add(new ConstructorAttribute("(function() { return { Field: 0, _Events: [] }})"));
+                .Add(new TemplateAttribute("(function() { return { Field: 0, _Events: [] }})()"));
 
             // for attributes on property level and fields, access them. 
             attributes.Member<Test, int>(x => x.Property)
@@ -134,15 +134,15 @@ namespace TestProject
             attributes.Member<Test, int>(x => x.Property2, AttributeTarget.Getter)
                 .Add(new TemplateAttribute("{this}.Property"));
             attributes.Member<Test, int>(x => x.Property2, AttributeTarget.Setter)
-                .Add(new TemplateAttribute("({this}.Property = {value})") { Fn = "TemplateFn" });
+                .Add(new TemplateAttribute("({this}.Property = {value})"));
 
             // events need to be accessed via name
             // attributes.Event<Test>("Event")
             //     .Add(new InlineConstAttribute());
             attributes.Event<Test>("Event", AttributeTarget.Adder)
-                .Add(new TemplateAttribute("{this}._Events.push({value}"));
+                .Add(new TemplateAttribute("{this}._Events.push({value})"));
             attributes.Event<Test>("Event", AttributeTarget.Remover)
-                .Add(new TemplateAttribute("alert('Not Supported')"));
+                .Add(new TemplateAttribute("{{ var __idx = {this}._Events.indexOf({value}); {this}._Events.splice(__idx, 1); }}"));
         }
 	}
 }
